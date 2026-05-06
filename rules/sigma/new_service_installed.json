@@ -1,0 +1,16 @@
+{
+  "title": "New Service Installed via Event 7045",
+  "id": "7f185100-0cd7-4e7a-9f3e-ab4b1c7d8e22",
+  "status": "stable",
+  "description": "Detects installation of a new Windows service (event 7045). Malware frequently installs persistence as a service.",
+  "level": "high",
+  "tags": ["attack.persistence", "attack.t1543.003"],
+  "logsource": {"category": "system", "product": "windows"},
+  "detection": {
+    "selection": {
+      "EventID": 7045
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate software installation"]
+}

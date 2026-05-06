@@ -1,0 +1,19 @@
+{
+  "title": "Kerberoasting — RC4 Ticket Request (4769)",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "status": "stable",
+  "description": "Detects Kerberos service ticket requests using RC4 encryption (0x17), a strong indicator of Kerberoasting. Attackers request RC4-encrypted tickets to crack offline.",
+  "level": "high",
+  "tags": ["attack.credential_access", "attack.t1558.003"],
+  "logsource": {"category": "security", "product": "windows"},
+  "detection": {
+    "selection": {
+      "EventID": 4769,
+      "Message|contains": ["0x17", "RC4"]
+    },
+    "filter_machine": {
+      "Message|contains": "$@"
+    },
+    "condition": "selection and not filter_machine"
+  }
+}

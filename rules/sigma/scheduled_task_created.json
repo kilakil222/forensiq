@@ -1,0 +1,16 @@
+{
+  "title": "Scheduled Task Created or Modified",
+  "id": "92491c0e-b8b4-4f02-8a72-71e1c8a9e0f3",
+  "status": "stable",
+  "description": "Detects creation (4698) or modification (4702) of a Windows scheduled task. Common persistence mechanism.",
+  "level": "medium",
+  "tags": ["attack.persistence", "attack.t1053.005"],
+  "logsource": {"category": "security", "product": "windows"},
+  "detection": {
+    "selection": {
+      "EventID": [4698, 4702]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate software scheduling tasks", "Windows Update", "AV/EDR products"]
+}

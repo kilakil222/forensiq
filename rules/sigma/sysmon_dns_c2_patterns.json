@@ -1,0 +1,38 @@
+{
+  "title": "Suspicious DNS Query Patterns — C2 / DGA / Tunneling",
+  "id": "f7a8b9c0-d1e2-3456-fabc-789012345678",
+  "status": "stable",
+  "description": "Detects suspicious DNS queries from Sysmon Event 22: very long subdomain labels (DGA), high-entropy hostnames, suspicious TLDs, or DNS queries made by scripting engines suggesting C2 communication.",
+  "level": "high",
+  "tags": ["attack.command_and_control", "attack.t1071.004", "attack.t1568.002"],
+  "logsource": {"category": "sysmon_dns", "product": "windows"},
+  "detection": {
+    "selection_shell_dns": {
+      "Image|endswith": [
+        "\\powershell.exe",
+        "\\pwsh.exe",
+        "\\cmd.exe",
+        "\\wscript.exe",
+        "\\cscript.exe",
+        "\\mshta.exe",
+        "\\rundll32.exe"
+      ]
+    },
+    "selection_susp_tld": {
+      "QueryName|contains": [
+        ".onion.",
+        ".bit.",
+        ".xyz.",
+        ".top.",
+        ".tk.",
+        ".cc.",
+        ".biz."
+      ]
+    },
+    "selection_txt_exfil": {
+      "QueryResults|contains": "type:  Text"
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate PowerShell DNS lookups", "Admin scripts"]
+}

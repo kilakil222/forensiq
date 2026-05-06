@@ -1,0 +1,25 @@
+{
+  "title": "PowerShell Download Cradle",
+  "id": "9a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+  "status": "stable",
+  "description": "Detects PowerShell downloading and executing code from the internet (Invoke-Expression + Net.WebClient / IEX + download).",
+  "level": "high",
+  "tags": ["attack.execution", "attack.t1059.001", "attack.command_and_control", "attack.t1105"],
+  "logsource": {"category": "ps_script", "product": "windows"},
+  "detection": {
+    "selection_iex": {
+      "ScriptBlockText|contains|all": ["Invoke-Expression", "WebClient"]
+    },
+    "selection_iex2": {
+      "ScriptBlockText|contains|all": ["IEX", "DownloadString"]
+    },
+    "selection_wget": {
+      "ScriptBlockText|contains|all": ["Invoke-WebRequest", "IEX"]
+    },
+    "selection_bits": {
+      "ScriptBlockText|contains": "Start-BitsTransfer"
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate admin scripts downloading updates or tools"]
+}

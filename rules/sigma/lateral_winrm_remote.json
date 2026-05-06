@@ -1,0 +1,20 @@
+{
+  "title": "Lateral Movement via WinRM (Enter-PSSession / winrs)",
+  "id": "b2c3d4e5-f6a7-4b8c-9d0e-f1a2b3c4d5e6",
+  "status": "stable",
+  "description": "Detects PowerShell remoting and winrs commands used for lateral movement over WinRM (TCP 5985/5986).",
+  "level": "high",
+  "tags": ["attack.lateral_movement", "attack.t1021.006"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_ps": {
+      "Image|endswith": ["\\powershell.exe", "\\pwsh.exe"],
+      "CommandLine|contains": ["Enter-PSSession", "Invoke-Command", "New-PSSession", "-ComputerName"]
+    },
+    "selection_winrs": {
+      "Image|endswith": ["\\winrs.exe"]
+    },
+    "condition": "selection_ps or selection_winrs"
+  },
+  "falsepositives": ["Legitimate remote administration via WinRM", "IT automation and configuration management scripts"]
+}

@@ -1,0 +1,20 @@
+{
+  "title": "Mimikatz Command Line Indicators",
+  "id": "06d71506-7beb-4f22-8888-e2e5e2ca7fd8",
+  "status": "stable",
+  "description": "Detects Mimikatz usage via characteristic command-line arguments. Mimikatz is the most common credential dumping tool.",
+  "level": "critical",
+  "tags": ["attack.credential_access", "attack.t1003.001"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "CommandLine|contains": [
+        "sekurlsa::", "lsadump::", "kerberos::", "crypto::",
+        "privilege::debug", "token::elevate", "vault::cred",
+        "lsass.dmp", "mimikatz"
+      ]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Security testing with explicit authorization"]
+}

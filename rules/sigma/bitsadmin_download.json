@@ -1,0 +1,24 @@
+{
+  "title": "BITSAdmin File Transfer for Malware Download",
+  "id": "e6f7a8b9-c0d1-2345-efab-234567890123",
+  "status": "stable",
+  "description": "Detects use of bitsadmin.exe or PowerShell Start-BitsTransfer to download files from remote URLs. BITSAdmin abuses the Windows Background Intelligent Transfer Service to download malware while evading network controls, persisting across reboots, and blending with legitimate Windows update traffic.",
+  "level": "medium",
+  "tags": ["attack.defense_evasion", "attack.persistence", "attack.t1197"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_bitsadmin": {
+      "Image|endswith": ["\\bitsadmin.exe"],
+      "CommandLine|contains": ["/transfer", "/download", "/addfile"]
+    },
+    "selection_powershell_bits": {
+      "Image|endswith": ["\\powershell.exe", "\\pwsh.exe"],
+      "CommandLine|contains": ["Start-BitsTransfer"]
+    },
+    "filter_wsus": {
+      "CommandLine|contains": ["windowsupdate.com", "update.microsoft.com", "download.microsoft.com"]
+    },
+    "condition": "(1 of selection*) and not filter_wsus"
+  },
+  "falsepositives": ["Legitimate software using BITS for downloads (excluding Windows Update)"]
+}

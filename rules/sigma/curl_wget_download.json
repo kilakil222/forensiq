@@ -1,0 +1,26 @@
+{
+  "title": "Suspicious File Download via curl or wget",
+  "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+  "status": "stable",
+  "description": "Detects curl.exe or wget.exe (both bundled with Windows 10+) downloading files to user-writable directories. Commonly used for ingress tool transfer in post-exploitation.",
+  "level": "medium",
+  "tags": ["attack.command_and_control", "attack.t1105"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_tool": {
+      "Image|endswith": ["\\curl.exe", "\\wget.exe"]
+    },
+    "selection_susp_output": {
+      "CommandLine|contains": [
+        "\\Temp\\", "\\AppData\\", "\\Downloads\\",
+        "\\ProgramData\\", "\\Users\\Public\\",
+        " -o ", " --output ", " -O "
+      ]
+    },
+    "filter_legit": {
+      "CommandLine|contains": ["update", "microsoft.com", "windowsupdate"]
+    },
+    "condition": "selection_tool and selection_susp_output and not filter_legit"
+  },
+  "falsepositives": ["Package managers", "Development tools downloading dependencies", "IT admin scripts"]
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Rundll32 Used for Proxy Code Execution",
+  "id": "4aae579d-9e4d-4b19-82e3-f1a2b3c4d5e6",
+  "status": "stable",
+  "description": "Detects suspicious use of rundll32.exe to execute code via javascript:, shell32.dll#Control_RunDLL, or unusual DLLs.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.execution", "attack.t1218.011"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_js": {
+      "Image|endswith": "\\rundll32.exe",
+      "CommandLine|contains": ["javascript:", "vbscript:"]
+    },
+    "selection_url": {
+      "Image|endswith": "\\rundll32.exe",
+      "CommandLine|contains": ["http://", "https://", "\\\\"]
+    },
+    "selection_shell": {
+      "Image|endswith": "\\rundll32.exe",
+      "CommandLine|contains": "shell32.dll,Control_RunDLL"
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate use of Control Panel items via rundll32"]
+}

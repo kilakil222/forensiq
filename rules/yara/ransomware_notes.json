@@ -1,0 +1,14 @@
+{
+  "name": "Ransomware Note Filenames",
+  "level": "critical",
+  "tags": ["attack.impact", "attack.t1486", "ransomware"],
+  "strings": [
+    "README_FOR_DECRYPT", "HOW_TO_DECRYPT", "DECRYPT_FILES",
+    "YOUR_FILES_ARE_ENCRYPTED", "RECOVERY_INSTRUCTIONS",
+    "RANSOM_NOTE", "!decrypt", "_RECOVER_FILES_",
+    "IMPORTANT-README", "read_me_for_decrypt",
+    "how_to_buy_bitcoin", "!!!ATTENTION!!!"
+  ],
+  "condition": "any",
+  "targets": ["paths", "events", "scriptblock"]
+}

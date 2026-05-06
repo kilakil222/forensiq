@@ -1,0 +1,19 @@
+{
+  "title": "Domain Trust and DC Reconnaissance via NLTest",
+  "description": "NLTest used to enumerate domain trusts and domain controllers — pre-attack recon step for lateral movement and domain escalation",
+  "logsource": "process_creation",
+  "confidence": "MED",
+  "technique": "T1482",
+  "detection": {
+    "condition": "selection",
+    "selection": {
+      "Image|endswith": "\\nltest.exe",
+      "CommandLine|contains|any": [
+        "/dclist", "/domain_trusts", "/trusted_domains",
+        "/all_trusts", "/server:", "/dsgetdc:", "/parentdomain"
+      ]
+    }
+  },
+  "fields": ["Image", "CommandLine", "User", "ParentImage"],
+  "falsepositives": ["Domain admins running diagnostic scripts"]
+}

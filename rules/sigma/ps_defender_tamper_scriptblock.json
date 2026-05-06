@@ -1,0 +1,34 @@
+{
+  "title": "Windows Defender Tamper via PowerShell Script Block",
+  "id": "d5e6f7a8-b9c0-1234-defa-567890123456",
+  "status": "stable",
+  "description": "Detects disabling or tampering with Windows Defender/AV via PowerShell cmdlets in script block logs. Attackers disable real-time protection before deploying malware.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.t1562.001"],
+  "logsource": {"category": "ps_script", "product": "windows"},
+  "detection": {
+    "selection_mppreference": {
+      "ScriptBlockText|contains": "Set-MpPreference"
+    },
+    "selection_disable_rt": {
+      "ScriptBlockText|contains|all": ["DisableRealtimeMonitoring", "$true"]
+    },
+    "selection_exclusions": {
+      "ScriptBlockText|contains": [
+        "Add-MpPreference",
+        "ExclusionPath",
+        "ExclusionExtension",
+        "ExclusionProcess"
+      ]
+    },
+    "selection_uninstall": {
+      "ScriptBlockText|contains": [
+        "Remove-MpThreat",
+        "Uninstall-WindowsFeature Windows-Defender",
+        "DisableAntiSpyware"
+      ]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate AV management by administrators"]
+}

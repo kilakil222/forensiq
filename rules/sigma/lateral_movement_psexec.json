@@ -1,0 +1,17 @@
+{
+  "title": "PsExec Lateral Movement",
+  "id": "b3a4c5d6-e7f8-4a9b-c0d1-e2f3a4b5c6d7",
+  "status": "stable",
+  "description": "Detects PsExec execution — commonly used for lateral movement.",
+  "level": "high",
+  "tags": ["attack.lateral_movement", "attack.t1021.002"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "Image|endswith": ["\\psexec.exe", "\\psexec64.exe", "\\PsExec.exe"],
+      "CommandLine|contains": "\\\\"
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate admin use of PsExec"]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Suspicious C2 and Phishing Domain Patterns",
+  "level": "high",
+  "tags": ["attack.command_and_control", "attack.t1071"],
+  "strings": [
+    "/api/v1/update", "/gate.php", "/panel/", "/c2/",
+    "ngrok.io", ".onion", "pastebin.com/raw",
+    "raw.githubusercontent.com", "filebin.net",
+    "temp-mail", "guerrillamail", "mailinator",
+    "bit.ly/", "tinyurl.com/", "t.co/"
+  ],
+  "condition": "any",
+  "targets": ["browser", "cmdline", "scriptblock", "events"]
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Windows Defender Real-Time Protection Disabled",
+  "id": "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a",
+  "status": "stable",
+  "description": "Detects disabling of Windows Defender real-time protection (event 5001/5004). Common technique before ransomware deployment.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.t1562.001"],
+  "logsource": {"category": "security", "product": "windows"},
+  "detection": {
+    "selection": {
+      "EventID": [5001, 5004, 5007, 5010, 5012, 3002]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate administrator disabling Defender for maintenance"]
+}

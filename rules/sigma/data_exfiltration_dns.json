@@ -1,0 +1,20 @@
+{
+  "title": "DNS Tunneling / Data Exfiltration via DNS",
+  "id": "a8b9c0d1-e2f3-4a4b-c5d6-e7f8a9b0c1d2",
+  "status": "experimental",
+  "description": "Detects unusually long DNS query names — indicator of DNS tunneling for C2 or data exfiltration.",
+  "level": "med",
+  "tags": ["attack.exfiltration", "attack.command_and_control", "attack.t1048.001", "attack.t1071.004"],
+  "logsource": {"category": "network_connection", "product": "windows"},
+  "detection": {
+    "selection": {
+      "DestinationPort": 53,
+      "Initiated": "true"
+    },
+    "filter": {
+      "DestinationHostname|contains": [".microsoft.com", ".windows.com", ".windowsupdate.com", ".office.com"]
+    },
+    "condition": "selection and not filter"
+  },
+  "falsepositives": ["Legitimate long domain names", "CDN domains"]
+}

@@ -1,0 +1,24 @@
+{
+  "title": "NTDS.dit Access via VSS Shadow Copy",
+  "id": "e5f6a7b8-c9d0-1234-efab-234567890123",
+  "status": "stable",
+  "description": "Detects attempts to access NTDS.dit (Active Directory database) via Volume Shadow Copy Service using vssadmin or diskshadow. This is a common technique for offline credential dumping from domain controllers without triggering LSASS hooks (T1003.003).",
+  "level": "critical",
+  "tags": ["attack.credential_access", "attack.t1003.003"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_vssadmin": {
+      "Image|endswith": ["\\vssadmin.exe"],
+      "CommandLine|contains": ["create shadow", "list shadows"]
+    },
+    "selection_diskshadow": {
+      "Image|endswith": ["\\diskshadow.exe"],
+      "CommandLine|contains": ["exec ", "/s "]
+    },
+    "selection_ntds_copy": {
+      "CommandLine|contains": ["ntds.dit", "NTDS.dit", "\\windows\\ntds\\", "\\Windows\\NTDS\\"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate backup operations on domain controllers"]
+}

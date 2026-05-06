@@ -1,0 +1,21 @@
+{
+  "title": "Windows Firewall Disabled via Netsh",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+  "status": "stable",
+  "description": "Detects disabling of the Windows Firewall using netsh commands. Attackers disable the firewall to allow reverse shells and C2 communications without triggering firewall alerts. Commonly seen in ransomware pre-staging and post-exploitation.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.t1562.004"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_advfirewall": {
+      "Image|endswith": ["\\netsh.exe"],
+      "CommandLine|contains|all": ["advfirewall", "state off"]
+    },
+    "selection_classic": {
+      "Image|endswith": ["\\netsh.exe"],
+      "CommandLine|contains|all": ["firewall", "opmode disable"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate firewall management scripts"]
+}

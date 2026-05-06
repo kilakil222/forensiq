@@ -1,0 +1,35 @@
+{
+  "title": "Active Directory Enumeration via PowerShell Script Block",
+  "id": "b3c4d5e6-f7a8-9012-bcde-f34567890123",
+  "status": "stable",
+  "description": "Detects Active Directory enumeration using PowerShell AD cmdlets and LDAP queries in script block logs. Common pre-attack reconnaissance step to map domain users, groups, and computers.",
+  "level": "medium",
+  "tags": ["attack.discovery", "attack.t1087.002", "attack.t1069.002", "attack.t1018"],
+  "logsource": {"category": "ps_script", "product": "windows"},
+  "detection": {
+    "selection_adcmdlets": {
+      "ScriptBlockText|contains": [
+        "Get-ADUser",
+        "Get-ADComputer",
+        "Get-ADGroup",
+        "Get-ADGroupMember",
+        "Get-ADDomain",
+        "Get-ADForest",
+        "Get-ADDomainController",
+        "Get-ADTrust"
+      ]
+    },
+    "selection_ldap": {
+      "ScriptBlockText|contains|all": ["DirectorySearcher", "LDAP://"]
+    },
+    "selection_net_recon": {
+      "ScriptBlockText|contains": [
+        "net localgroup administrators",
+        "net group \"domain admins\"",
+        "net group \"enterprise admins\""
+      ]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["IT administrators performing legitimate AD queries", "Monitoring scripts"]
+}

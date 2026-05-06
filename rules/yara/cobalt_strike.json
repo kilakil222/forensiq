@@ -1,0 +1,12 @@
+{
+  "name": "Cobalt Strike Beacon Indicators",
+  "level": "critical",
+  "tags": ["attack.c2", "attack.t1071", "cobalt_strike"],
+  "strings": [
+    "ReflectiveDll", "cobaltstrike", "beacon.dll", "sleep_mask",
+    "pipe\\\\MSSE-", "Meterpreter", "msf_shellcode",
+    "beacon.x64.dll", "CobaltStrike", "CS_Loader"
+  ],
+  "condition": "any",
+  "targets": ["cmdline", "scriptblock", "events", "paths"]
+}

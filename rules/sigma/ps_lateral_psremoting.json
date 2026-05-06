@@ -1,0 +1,28 @@
+{
+  "title": "PowerShell Remoting Lateral Movement in Script Block",
+  "id": "c4d5e6f7-a8b9-0123-cdef-456789012345",
+  "status": "stable",
+  "description": "Detects lateral movement via PowerShell Remoting captured in script block logs: Invoke-Command, New-PSSession, Enter-PSSession targeting remote hosts. Also covers WinRM-based payload delivery.",
+  "level": "high",
+  "tags": ["attack.lateral_movement", "attack.t1021.006", "attack.execution", "attack.t1059.001"],
+  "logsource": {"category": "ps_script", "product": "windows"},
+  "detection": {
+    "selection_invoke": {
+      "ScriptBlockText|contains|all": ["Invoke-Command", "-ComputerName"]
+    },
+    "selection_session": {
+      "ScriptBlockText|contains": [
+        "New-PSSession",
+        "Enter-PSSession"
+      ]
+    },
+    "selection_credentials": {
+      "ScriptBlockText|contains|all": ["New-PSSession", "-Credential"]
+    },
+    "selection_scriptblock_remote": {
+      "ScriptBlockText|contains|all": ["Invoke-Command", "-ScriptBlock"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Authorized remote administration", "IT automation scripts"]
+}

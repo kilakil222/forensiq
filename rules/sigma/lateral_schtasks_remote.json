@@ -1,0 +1,17 @@
+{
+  "title": "Lateral Movement via Remote Scheduled Task",
+  "id": "e2f3a4b5-c6d7-4e8f-a9b0-c1d2e3f4a5b6",
+  "status": "stable",
+  "description": "Detects schtasks.exe creating or running tasks on a remote system using /s flag.",
+  "level": "high",
+  "tags": ["attack.lateral_movement", "attack.execution", "attack.persistence", "attack.t1053.005", "attack.t1021"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "Image|endswith": ["\\schtasks.exe"],
+      "CommandLine|contains": ["/s \\\\", "/s\\\\"]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["IT automation tools", "Legitimate remote administration"]
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Discovery: Recon Commands (whoami / systeminfo / nltest)",
+  "id": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c4d5",
+  "status": "stable",
+  "description": "Detects common post-exploitation discovery commands used to enumerate users, privileges, and domain trust relationships.",
+  "level": "medium",
+  "tags": ["attack.discovery", "attack.t1082", "attack.t1069", "attack.t1016"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "CommandLine|contains": [
+        "whoami /all",
+        "whoami /priv",
+        "net localgroup",
+        "net user /domain",
+        "nltest /domain_trusts",
+        "nltest /dclist:",
+        "systeminfo",
+        "ipconfig /all"
+      ]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["System administrators running diagnostics", "Monitoring and inventory tools"]
+}

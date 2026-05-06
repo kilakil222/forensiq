@@ -1,0 +1,22 @@
+{
+  "title": "WMI Provider Host Spawning Suspicious Child Process",
+  "id": "b2c3d4e5-f6a7-8901-bcde-234567890abc",
+  "status": "stable",
+  "description": "Detects WmiPrvSE.exe (WMI Provider Host) spawning command-line interpreters or scripting engines. This indicates WMI-based execution or lateral movement via WMIC remote exec, Invoke-WmiMethod, or WMI event subscriptions. Legitimate WMI operations almost never spawn cmd.exe or PowerShell directly.",
+  "level": "high",
+  "tags": ["attack.execution", "attack.lateral_movement", "attack.t1047", "attack.t1021.006"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "ParentImage|endswith": ["\\WmiPrvSE.exe"],
+      "Image|endswith": [
+        "\\cmd.exe", "\\powershell.exe", "\\pwsh.exe",
+        "\\wscript.exe", "\\cscript.exe", "\\mshta.exe",
+        "\\regsvr32.exe", "\\rundll32.exe", "\\msiexec.exe",
+        "\\certutil.exe", "\\bitsadmin.exe"
+      ]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Rare: WMI-based management software that legitimately uses WMI to run scripts"]
+}

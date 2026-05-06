@@ -1,0 +1,20 @@
+{
+  "title": "Defense Evasion: msiexec Loading Remote MSI",
+  "id": "c6d7e8f9-a0b1-4c2d-e3f4-a5b6c7d8e9f0",
+  "status": "stable",
+  "description": "Detects msiexec.exe loading MSI packages from HTTP/HTTPS or UNC paths — used to bypass application whitelisting (T1218.007).",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.execution", "attack.t1218.007"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "Image|endswith": ["\\msiexec.exe"],
+      "CommandLine|contains": ["http://", "https://", "\\\\"]
+    },
+    "filter_legit": {
+      "CommandLine|contains": ["/uninstall", "/x"]
+    },
+    "condition": "selection and not filter_legit"
+  },
+  "falsepositives": ["Software deployment systems that use UNC paths for MSI packages", "SCCM/MECM deployments"]
+}

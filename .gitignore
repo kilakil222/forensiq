@@ -1,0 +1,48 @@
+.worktrees/
+
+# Build outputs
+*.exe
+*.zip
+*.tar
+*.b64.txt
+
+# Case databases
+*.fcase
+*.fcase.wal
+*.fcase-shm
+*.fcase-journal
+*.fcase-tmp
+
+# Backup directories
+internal/parsers/_memparse_bak_*/
+internal/parsers/memparse_bak_*/
+internal/parsers/memparse/_bak_*/
+
+# Temp / OMC state
+.go-tmp/
+.omc/
+.DS_Store
+*.log
+build_remote.log
+
+# Dev scripts (local only)
+analyze_*.py
+diag_*.py
+diag_*.go
+check_*.py
+deploy_*.py
+hot_reload_*.py
+rebuild_*.py
+redeploy_*.py
+run_*.py
+build_*.py
+test_*.py
+bg_*.py
+tools/*.py
+
+# HTML test/output files
+*.html
+multi_model_out.txt
+
+# Testdata (large forensic samples)
+testdata/

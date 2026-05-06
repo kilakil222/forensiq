@@ -1,0 +1,19 @@
+{
+  "title": "Accessibility Feature Hijacking (Sticky Keys / Utilman)",
+  "id": "3d4ba8ef-2d71-4f22-a8e3-c1b2d3e4f566",
+  "status": "stable",
+  "description": "Detects modification of Windows accessibility binaries (sethc.exe, utilman.exe) used to gain SYSTEM shell from lockscreen.",
+  "level": "critical",
+  "tags": ["attack.persistence", "attack.privilege_escalation", "attack.t1546.008"],
+  "logsource": {"category": "file_event", "product": "windows"},
+  "detection": {
+    "selection": {
+      "TargetFilename|contains": [
+        "sethc.exe", "utilman.exe", "osk.exe",
+        "magnify.exe", "narrator.exe", "displayswitch.exe", "atbroker.exe"
+      ]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Windows updates modifying accessibility binaries"]
+}

@@ -1,0 +1,32 @@
+{
+  "title": "Security Service Stop Before Ransomware Execution",
+  "id": "c0d1e2f3-a4b5-6789-cdef-012345678901",
+  "status": "stable",
+  "description": "Detects bulk service stopping commands targeting security tools, databases, and backup agents — a standard ransomware pre-encryption step to unlock files and disable defenses.",
+  "level": "high",
+  "tags": ["attack.impact", "attack.defense_evasion", "attack.t1489", "attack.t1562.001"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_net_stop": {
+      "Image|endswith": ["\\net.exe", "\\net1.exe"],
+      "CommandLine|contains|all": ["stop"],
+      "CommandLine|contains": [
+        "MSSQLSERVER", "SQLSERVERAGENT", "MSSQL$",
+        "MSSQLFDLauncher", "SQLBrowser", "SQLWriter",
+        "BackupExecAgentAccelerator", "BackupExecDeviceMediaService",
+        "Antivirus", "McAfee", "Symantec", "Sophos",
+        "WinDefend", "SecurityHealthService"
+      ]
+    },
+    "selection_sc_stop": {
+      "Image|endswith": ["\\sc.exe"],
+      "CommandLine|contains|all": ["stop"],
+      "CommandLine|contains": [
+        "WinDefend", "MSSQLServer", "wuauserv",
+        "SQLSERVERAGENT", "BackupExec", "Sophos"
+      ]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Planned maintenance stopping services"]
+}

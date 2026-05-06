@@ -1,0 +1,33 @@
+{
+  "title": "BloodHound / SharpHound / ADFind Active Directory Recon",
+  "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "status": "stable",
+  "description": "Detects execution of AD enumeration tools: SharpHound (BloodHound collector), ADFind, ldapdomaindump, and similar tools used for pre-attack reconnaissance.",
+  "level": "high",
+  "tags": ["attack.discovery", "attack.t1087.002", "attack.t1069.002"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_tools": {
+      "Image|endswith": [
+        "\\sharphound.exe",
+        "\\adfind.exe",
+        "\\adrecon.exe",
+        "\\bloodhound.exe",
+        "\\ldapdomaindump.exe"
+      ]
+    },
+    "selection_cmdline": {
+      "CommandLine|contains": [
+        "CollectionMethod",
+        "sharphound",
+        "bloodhound",
+        "DCOnly",
+        "Stealth",
+        "adfind",
+        "-f objectcategory",
+        "ldapdomaindump"
+      ]
+    },
+    "condition": "selection_tools or selection_cmdline"
+  }
+}

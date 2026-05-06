@@ -1,0 +1,31 @@
+{
+  "title": "Mimikatz / Credential Dumping Patterns in PowerShell Script Block",
+  "id": "a2b3c4d5-e6f7-8901-abcd-ef2345678901",
+  "status": "stable",
+  "description": "Detects Invoke-Mimikatz and credential dumping keywords in PowerShell script block logs. Attackers load Mimikatz in-memory via PowerShell to avoid writing to disk.",
+  "level": "high",
+  "tags": ["attack.credential_access", "attack.t1003.001", "attack.t1550.002"],
+  "logsource": {"category": "ps_script", "product": "windows"},
+  "detection": {
+    "selection_mimikatz": {
+      "ScriptBlockText|contains": "Invoke-Mimikatz"
+    },
+    "selection_sekurlsa": {
+      "ScriptBlockText|contains": "sekurlsa"
+    },
+    "selection_lsadump": {
+      "ScriptBlockText|contains": "lsadump"
+    },
+    "selection_dumpcreds": {
+      "ScriptBlockText|contains": "DumpCreds"
+    },
+    "selection_kerberos": {
+      "ScriptBlockText|contains|all": ["kerberos", "golden"]
+    },
+    "selection_wce": {
+      "ScriptBlockText|contains": "Invoke-WCE"
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Authorized red team operations"]
+}

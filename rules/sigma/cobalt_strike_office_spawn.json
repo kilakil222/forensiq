@@ -1,0 +1,38 @@
+{
+  "title": "Cobalt Strike — Office Application Spawning Shell",
+  "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+  "status": "stable",
+  "description": "Detects Microsoft Office applications spawning cmd.exe, PowerShell, wscript, cscript, or mshta — a classic Cobalt Strike macro / phishing payload initial access pattern.",
+  "level": "high",
+  "tags": ["attack.execution", "attack.initial_access", "attack.t1566.001", "attack.t1059.003"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_parent": {
+      "ParentImage|endswith": [
+        "\\WINWORD.EXE",
+        "\\EXCEL.EXE",
+        "\\POWERPNT.EXE",
+        "\\OUTLOOK.EXE",
+        "\\MSPUB.EXE",
+        "\\VISIO.EXE",
+        "\\winword.exe",
+        "\\excel.exe",
+        "\\powerpnt.exe",
+        "\\outlook.exe"
+      ]
+    },
+    "selection_child": {
+      "Image|endswith": [
+        "\\cmd.exe",
+        "\\powershell.exe",
+        "\\pwsh.exe",
+        "\\wscript.exe",
+        "\\cscript.exe",
+        "\\mshta.exe",
+        "\\rundll32.exe",
+        "\\regsvr32.exe"
+      ]
+    },
+    "condition": "selection_parent and selection_child"
+  }
+}

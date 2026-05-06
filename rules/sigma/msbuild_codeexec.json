@@ -1,0 +1,27 @@
+{
+  "title": "MSBuild Inline Task Code Execution",
+  "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "status": "stable",
+  "description": "Detects MSBuild.exe executing project files from user-writable or suspicious directories, or spawning child processes. MSBuild can execute inline C# tasks and is a common AppLocker/WDAC bypass.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.execution", "attack.t1127.001"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_msbuild_susp_path": {
+      "Image|endswith": ["\\MSBuild.exe"],
+      "CommandLine|contains": [
+        "\\Temp\\", "\\AppData\\", "\\Downloads\\",
+        "\\ProgramData\\", "\\Users\\Public\\"
+      ]
+    },
+    "selection_msbuild_child": {
+      "ParentImage|endswith": ["\\MSBuild.exe"],
+      "Image|endswith": [
+        "\\cmd.exe", "\\powershell.exe", "\\wscript.exe",
+        "\\mshta.exe", "\\regsvr32.exe"
+      ]
+    },
+    "condition": "selection_msbuild_susp_path or selection_msbuild_child"
+  },
+  "falsepositives": ["Legitimate build servers", "Developer workstations building projects in temp directories"]
+}

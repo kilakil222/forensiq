@@ -1,0 +1,28 @@
+{
+  "title": "LSASS Credential Dump via Procdump or Taskmgr",
+  "id": "d5e6f7a8-b9c0-1234-defa-123456789012",
+  "status": "stable",
+  "description": "Detects dumping of LSASS process memory for credential harvesting using procdump.exe, Task Manager, or direct process access. Dumping LSASS captures NTLM hashes, Kerberos tickets, and cleartext credentials from memory. A critical indicator of credential theft.",
+  "level": "high",
+  "tags": ["attack.credential_access", "attack.t1003.001"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_procdump": {
+      "Image|endswith": ["\\procdump.exe", "\\procdump64.exe"],
+      "CommandLine|contains": ["lsass"]
+    },
+    "selection_procdump_flag": {
+      "Image|endswith": ["\\procdump.exe", "\\procdump64.exe"],
+      "CommandLine|contains": ["-ma", "-mm", "-r"]
+    },
+    "selection_taskmgr_dump": {
+      "Image|endswith": ["\\taskmgr.exe"],
+      "CommandLine|contains": ["lsass.dmp"]
+    },
+    "selection_dumpert": {
+      "CommandLine|contains": ["dumpert", "lsass.exe", "MiniDumpWriteDump"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Authorized crash dump collection by system administrators"]
+}

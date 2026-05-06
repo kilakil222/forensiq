@@ -1,0 +1,25 @@
+{
+  "title": "Shadow Copy Deletion",
+  "id": "d5e6f7a8-b9c0-4d1e-f2a3-b4c5d6e7f8a9",
+  "status": "stable",
+  "description": "Detects deletion of volume shadow copies — ransomware precursor.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.impact", "attack.t1490"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_vssadmin": {
+      "Image|endswith": "\\vssadmin.exe",
+      "CommandLine|contains|all": ["delete", "shadows"]
+    },
+    "selection_wmic": {
+      "Image|endswith": "\\wmic.exe",
+      "CommandLine|contains|all": ["shadowcopy", "delete"]
+    },
+    "selection_wbadmin": {
+      "Image|endswith": "\\wbadmin.exe",
+      "CommandLine|contains|all": ["delete", "catalog"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate backup software cleanup"]
+}

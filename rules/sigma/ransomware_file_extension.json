@@ -1,0 +1,16 @@
+{
+  "title": "Ransomware File Extension Pattern",
+  "id": "e6f7a8b9-c0d1-4e2f-a3b4-c5d6e7f8a9b0",
+  "status": "experimental",
+  "description": "Detects creation of files with common ransomware extensions in MFT.",
+  "level": "high",
+  "tags": ["attack.impact", "attack.t1486"],
+  "logsource": {"category": "file_event", "product": "windows"},
+  "detection": {
+    "selection": {
+      "TargetFilename|endswith": [".locked", ".encrypted", ".crypted", ".crypt", ".enc", ".ransom", ".pay2decrypt", ".id-", ".wncry", ".ryuk", ".conti", ".maze", ".revil", ".sodinokibi"]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate encryption software"]
+}

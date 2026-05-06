@@ -1,0 +1,28 @@
+{
+  "title": "Ransomware — Inhibit System Recovery",
+  "id": "b9c0d1e2-f3a4-5678-bcde-f01234567890",
+  "status": "stable",
+  "description": "Detects commands used by ransomware to prevent system recovery: disabling Windows Recovery, deleting backup catalogs, and disabling startup repair. Commonly seen in Ryuk, LockBit, Conti, and similar ransomware families.",
+  "level": "high",
+  "tags": ["attack.impact", "attack.t1490"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_bcdedit": {
+      "Image|endswith": ["\\bcdedit.exe"],
+      "CommandLine|contains": [
+        "recoveryenabled no",
+        "bootstatuspolicy ignoreallfailures",
+        "safeboot network"
+      ]
+    },
+    "selection_wbadmin": {
+      "Image|endswith": ["\\wbadmin.exe"],
+      "CommandLine|contains": ["DELETE CATALOG", "delete catalog"]
+    },
+    "selection_diskshadow": {
+      "CommandLine|contains|all": ["diskshadow", "delete shadows"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["System administrators intentionally modifying recovery settings"]
+}

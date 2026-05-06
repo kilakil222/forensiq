@@ -1,0 +1,16 @@
+{
+  "title": "New Local User Account Created",
+  "id": "cd91a1d5-8b3e-4f1a-bc2d-e3f4a5b6c7d8",
+  "status": "stable",
+  "description": "Detects creation of a new local user account (event 4720). Attackers create accounts for persistent access.",
+  "level": "high",
+  "tags": ["attack.persistence", "attack.t1136.001"],
+  "logsource": {"category": "security", "product": "windows"},
+  "detection": {
+    "selection": {
+      "EventID": 4720
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate IT account provisioning"]
+}

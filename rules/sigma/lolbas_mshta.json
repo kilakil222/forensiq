@@ -1,0 +1,25 @@
+{
+  "title": "MSHTA Executing Remote or Suspicious Script",
+  "id": "f1a2b3c4-d5e6-7890-fabc-def012345678",
+  "status": "stable",
+  "description": "Detects mshta.exe executing remote scripts (HTTP/HTTPS), VBScript inline, or scripts from suspicious paths. MSHTA is a signed Windows binary frequently abused for defense evasion and initial execution (T1218.005). Attackers use it to bypass AppLocker and execute arbitrary code.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.execution", "attack.t1218.005"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_remote": {
+      "Image|endswith": ["\\mshta.exe"],
+      "CommandLine|contains": ["http://", "https://", "ftp://"]
+    },
+    "selection_vbscript": {
+      "Image|endswith": ["\\mshta.exe"],
+      "CommandLine|contains": ["vbscript:", "javascript:"]
+    },
+    "selection_susp_path": {
+      "Image|endswith": ["\\mshta.exe"],
+      "CommandLine|contains": ["\\Temp\\", "\\AppData\\", "\\ProgramData\\", "\\Users\\Public\\"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate HTA-based applications or installers"]
+}

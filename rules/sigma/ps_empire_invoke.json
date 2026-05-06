@@ -1,0 +1,25 @@
+{
+  "title": "PowerShell Empire / Post-Exploitation Framework Indicators",
+  "id": "a7b8c9d0-e1f2-3456-abcd-456789012345",
+  "status": "stable",
+  "description": "Detects PowerShell scriptblock patterns associated with Empire, Metasploit, Cobalt Strike, and similar post-exploitation frameworks. These include Invoke-Expression with obfuscated payloads, common agent check-in patterns, and in-memory assembly loading (T1059.001).",
+  "level": "high",
+  "tags": ["attack.execution", "attack.t1059.001", "attack.c2"],
+  "logsource": {"category": "ps_script", "product": "windows"},
+  "detection": {
+    "selection_empire": {
+      "ScriptBlockText|contains": ["Invoke-Empire", "Get-Keystrokes", "Get-TimedScreenshot", "Invoke-Mimikatz", "PowerSploit", "PowerView"]
+    },
+    "selection_iex_patterns": {
+      "ScriptBlockText|contains": ["IEX (New-Object", "IEX(New-Object", "Invoke-Expression (New-Object", "iex (new-object", "[System.Reflection.Assembly]::Load", "[Reflection.Assembly]::Load"]
+    },
+    "selection_download_exec": {
+      "ScriptBlockText|contains": ["DownloadString", "DownloadFile", "WebClient", "Net.WebClient"]
+    },
+    "filter_legit": {
+      "ScriptBlockText|contains": ["chocolatey", "PSWindowsUpdate", "NuGet"]
+    },
+    "condition": "(1 of selection*) and not filter_legit"
+  },
+  "falsepositives": ["Legitimate PowerShell scripts using WebClient for updates"]
+}

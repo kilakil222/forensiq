@@ -1,0 +1,21 @@
+{
+  "title": "ODBCConf LOLBin Code Execution",
+  "id": "b8c9d0e1-f2a3-4567-bcde-567890123456",
+  "status": "stable",
+  "description": "Detects odbcconf.exe used to load arbitrary DLLs via the REGSVR action. ODBCConf is a signed Windows binary that can register DLLs, making it useful for bypassing application control policies (T1218.008). Often combined with /S flag to suppress dialogs.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.execution", "attack.t1218.008"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "Image|endswith": ["\\odbcconf.exe"],
+      "CommandLine|contains": ["/S ", "/A ", "REGSVR", "regsvr"]
+    },
+    "selection_susp_path": {
+      "Image|endswith": ["\\odbcconf.exe"],
+      "CommandLine|contains": ["\\Temp\\", "\\AppData\\", "\\ProgramData\\", "\\Users\\Public\\", "http://", "https://"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate ODBC driver registration"]
+}

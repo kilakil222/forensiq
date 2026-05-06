@@ -1,0 +1,14 @@
+{
+  "name": "PowerShell Obfuscation Techniques",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.t1027", "attack.execution", "attack.t1059.001"],
+  "strings": [
+    "Invoke-Obfuscation", "Out-EncryptedScript", "Invoke-CradleCrafter",
+    "[Convert]::FromBase64String", "System.Text.Encoding]::Unicode",
+    "[char][int]", "-join(", "CHAR(", "chr(",
+    "^p^o^w^e^r^s^h^e^l^l", "p`o`w`e`r`s`h`e`l`l",
+    ".GetMethod(", "Reflection.Assembly"
+  ],
+  "condition": "any",
+  "targets": ["scriptblock", "cmdline", "events"]
+}

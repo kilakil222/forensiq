@@ -1,0 +1,16 @@
+{
+  "title": "Account Added to Privileged Group",
+  "id": "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7f",
+  "status": "stable",
+  "description": "Detects addition of a user to a privileged group such as Administrators or Domain Admins (events 4732/4756).",
+  "level": "high",
+  "tags": ["attack.privilege_escalation", "attack.t1098"],
+  "logsource": {"category": "security", "product": "windows"},
+  "detection": {
+    "selection": {
+      "EventID": [4732, 4756]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate IT operations adding users to groups"]
+}

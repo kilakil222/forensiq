@@ -1,0 +1,28 @@
+{
+  "title": "PowerShell AMSI Bypass in Script Block",
+  "id": "f1e2d3c4-b5a6-7890-fedc-ba9876543210",
+  "status": "stable",
+  "description": "Detects AMSI bypass techniques captured in PowerShell script block logs. These patterns patch amsi.dll in memory to disable scanning, a prerequisite for loading offensive tools without AV detection.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.t1562.001", "attack.execution", "attack.t1059.001"],
+  "logsource": {"category": "ps_script", "product": "windows"},
+  "detection": {
+    "selection_marshal": {
+      "ScriptBlockText|contains|all": ["Marshal", "AmsiScanBuffer"]
+    },
+    "selection_patch": {
+      "ScriptBlockText|contains|all": ["amsi", "WriteByte"]
+    },
+    "selection_context": {
+      "ScriptBlockText|contains": "AmsiContext"
+    },
+    "selection_reflect": {
+      "ScriptBlockText|contains|all": ["Reflection", "amsi.dll"]
+    },
+    "selection_utils": {
+      "ScriptBlockText|contains": "AmsiUtils"
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Security testing tools, red team exercises"]
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Regsvr32 Remote COM Object Execution (Squiblydoo)",
+  "id": "a2b3c4d5-e6f7-8901-abcd-ef0123456789",
+  "status": "stable",
+  "description": "Detects regsvr32.exe loading remote COM objects or DLLs via HTTP/HTTPS/SMB — the 'Squiblydoo' technique. Regsvr32 is a signed binary that bypasses AppLocker and can execute arbitrary scriptlets or DLLs without writing to disk. Used extensively in phishing and post-exploitation chains.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.execution", "attack.t1218.010"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_remote": {
+      "Image|endswith": ["\\regsvr32.exe"],
+      "CommandLine|contains": ["http://", "https://", "\\\\"]
+    },
+    "selection_scrobj": {
+      "Image|endswith": ["\\regsvr32.exe"],
+      "CommandLine|contains": ["scrobj.dll"]
+    },
+    "selection_susp_path": {
+      "Image|endswith": ["\\regsvr32.exe"],
+      "CommandLine|contains": ["\\Temp\\", "\\AppData\\", "\\ProgramData\\"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate COM DLL registration from network shares in enterprise environments"]
+}

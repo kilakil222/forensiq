@@ -1,0 +1,12 @@
+{
+  "name": "Mimikatz Runtime Strings",
+  "level": "critical",
+  "tags": ["attack.credential_access", "attack.t1003.001"],
+  "strings": [
+    "sekurlsa::", "lsadump::", "kerberos::", "privilege::debug",
+    "token::elevate", "vault::cred", "mimikatz", "gentilkiwi",
+    "LSASS dump", "WDigest", "sekurlsa.dll", "kuhl_m_sekurlsa"
+  ],
+  "condition": "any",
+  "targets": ["cmdline", "scriptblock", "events"]
+}

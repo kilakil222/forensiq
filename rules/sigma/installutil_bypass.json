@@ -1,0 +1,20 @@
+{
+  "title": "InstallUtil LOLBin Code Execution",
+  "id": "b2c3d4e5-f6a7-8901-bcde-f01234567890",
+  "status": "stable",
+  "description": "Detects use of InstallUtil.exe to execute arbitrary code by abusing the .NET installation utility. InstallUtil is a signed Microsoft binary that can be used to bypass application whitelisting and execute malicious assemblies (T1218.004). Commonly used by APT groups and red teams.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.execution", "attack.t1218.004"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "Image|endswith": ["\\InstallUtil.exe"],
+      "CommandLine|contains": ["/logfile=", "/LogToConsole=false", ".dll", ".exe", "http://", "https://", "\\Temp\\", "\\AppData\\"]
+    },
+    "filter_legit": {
+      "CommandLine|contains": ["\\Microsoft.NET\\Framework\\", "\\Windows\\Microsoft.NET\\"]
+    },
+    "condition": "selection and not filter_legit"
+  },
+  "falsepositives": ["Legitimate .NET application installation"]
+}

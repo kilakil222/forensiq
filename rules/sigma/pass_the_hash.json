@@ -1,0 +1,17 @@
+{
+  "title": "Pass-the-Hash Attack Pattern",
+  "id": "c4d5e6f7-a8b9-4c0d-e1f2-a3b4c5d6e7f8",
+  "status": "stable",
+  "description": "Detects logon with empty password but NTLM authentication — indicator of pass-the-hash.",
+  "level": "high",
+  "tags": ["attack.lateral_movement", "attack.credential_access", "attack.t1550.002"],
+  "logsource": {"service": "auth"},
+  "detection": {
+    "selection": {
+      "EventID": 4624,
+      "LogonType": 3
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate NTLM authentication in some environments"]
+}

@@ -1,0 +1,18 @@
+{
+  "title": "DCSync Attack — Domain Replication",
+  "id": "f7a8b9c0-d1e2-4f3a-b4c5-d6e7f8a9b0c1",
+  "status": "stable",
+  "description": "Detects DCSync attack: unauthorized domain replication request (mimikatz lsadump::dcsync).",
+  "level": "high",
+  "tags": ["attack.credential_access", "attack.t1003.006"],
+  "logsource": {"category": "security", "product": "windows"},
+  "detection": {
+    "selection": {
+      "EventID": 4662,
+      "AccessMask": "0x100",
+      "Properties|contains": ["1131f6aa-9c07-11d1-f79f-00c04fc2dcd2", "1131f6ad-9c07-11d1-f79f-00c04fc2dcd2"]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate domain controller replication"]
+}

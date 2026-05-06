@@ -1,0 +1,25 @@
+{
+  "title": "UAC Bypass via fodhelper, eventvwr, or sdclt",
+  "id": "c4d5e6f7-a8b9-0123-cdef-012345678901",
+  "status": "stable",
+  "description": "Detects UAC bypass techniques using auto-elevated Windows binaries: fodhelper.exe, eventvwr.exe, and sdclt.exe. These binaries read registry keys that attackers pre-populate with malicious commands, executing them with high integrity without a UAC prompt. Commonly used in Cobalt Strike and metasploit post-exploitation.",
+  "level": "high",
+  "tags": ["attack.privilege_escalation", "attack.defense_evasion", "attack.t1548.002"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_fodhelper": {
+      "ParentImage|endswith": ["\\fodhelper.exe"],
+      "Image|endswith": ["\\cmd.exe", "\\powershell.exe", "\\wscript.exe", "\\cscript.exe"]
+    },
+    "selection_eventvwr": {
+      "ParentImage|endswith": ["\\eventvwr.exe"],
+      "Image|endswith": ["\\cmd.exe", "\\powershell.exe", "\\wscript.exe"]
+    },
+    "selection_sdclt": {
+      "Image|endswith": ["\\sdclt.exe"],
+      "CommandLine|contains": ["/kickoffelev"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Rare: legitimate administrative tools spawning from these binaries"]
+}

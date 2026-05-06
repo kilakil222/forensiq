@@ -1,0 +1,20 @@
+{
+  "title": "Security Service Stopped or Disabled via SC",
+  "id": "c3d4e5f6-a7b8-9012-cdef-012345678901",
+  "status": "stable",
+  "description": "Detects stopping or disabling of security-related Windows services using sc.exe. Attackers commonly disable antivirus, EDR, and logging services before lateral movement or ransomware deployment (T1562.001).",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.t1562.001"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "Image|endswith": ["\\sc.exe"],
+      "CommandLine|contains": ["stop ", "delete ", "config ", "disable"]
+    },
+    "selection_targets": {
+      "CommandLine|contains": ["WinDefend", "MpsSvc", "wscsvc", "EventLog", "Wecsvc", "SSDPSRV", "wuauserv", "SecurityHealthService", "Sense", "mdatp", "MsSense"]
+    },
+    "condition": "selection and selection_targets"
+  },
+  "falsepositives": ["Legitimate service management by administrators"]
+}

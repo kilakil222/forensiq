@@ -1,0 +1,24 @@
+{
+  "title": "Network/Domain Reconnaissance via Net and Dsquery Commands",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567891",
+  "status": "stable",
+  "description": "Detects enumeration of domain users, groups, and trust relationships using built-in Windows commands. Commonly observed during the reconnaissance phase to identify privileged accounts, domain trust relationships, and high-value targets before lateral movement.",
+  "level": "medium",
+  "tags": ["attack.discovery", "attack.t1069.002", "attack.t1087.002", "attack.t1018"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "CommandLine|contains": [
+        "net user /domain", "net group /domain",
+        "net group \"Domain Admins\"", "net group \"Enterprise Admins\"",
+        "net group \"Schema Admins\"",
+        "net localgroup administrators",
+        "dsquery user", "dsquery computer", "dsquery group",
+        "nltest /domain_trusts", "nltest /dclist",
+        "wmic useraccount", "wmic group"
+      ]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["IT administrators performing legitimate AD management tasks"]
+}

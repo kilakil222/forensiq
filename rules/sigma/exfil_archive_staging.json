@@ -1,0 +1,24 @@
+{
+  "title": "Exfiltration Staging: Archive Creation in Temp or User Directory",
+  "id": "c3d4e5f6-a7b8-4c9d-0e1f-a2b3c4d5e6f7",
+  "status": "stable",
+  "description": "Detects archive creation tools (7zip, WinRAR) or PowerShell Compress-Archive writing to temp/user paths — common staging step before exfiltration.",
+  "level": "medium",
+  "tags": ["attack.collection", "attack.exfiltration", "attack.t1560.001", "attack.t1048"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_archivers": {
+      "Image|endswith": ["\\7z.exe", "\\7za.exe", "\\WinRAR.exe", "\\rar.exe"],
+      "CommandLine|contains": [" a "]
+    },
+    "selection_ps_compress": {
+      "Image|endswith": ["\\powershell.exe", "\\pwsh.exe"],
+      "CommandLine|contains": ["Compress-Archive", "ZipFile::CreateFromDirectory"]
+    },
+    "filter_system_paths": {
+      "CommandLine|contains": ["\\Program Files\\", "\\Windows\\System32\\"]
+    },
+    "condition": "(selection_archivers or selection_ps_compress) and not filter_system_paths"
+  },
+  "falsepositives": ["Legitimate backup operations", "Software build pipelines creating release archives"]
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Windows Event Log Cleared",
+  "id": "a62b3dcc-e9a9-4b43-8c7e-a5e2a1f9e3b8",
+  "status": "stable",
+  "description": "Detects clearing of Windows Security or System event logs (event 1102/1100). A common anti-forensics technique.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.t1070.001"],
+  "logsource": {"category": "security", "product": "windows"},
+  "detection": {
+    "selection": {
+      "EventID": [1102, 1100]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate log rotation by administrators"]
+}

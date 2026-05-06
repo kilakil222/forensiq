@@ -1,0 +1,17 @@
+{
+  "title": "Suspicious Child Process Spawned by Svchost",
+  "id": "d4e5f6a7-b8c9-0123-defa-123456789012",
+  "status": "stable",
+  "description": "Detects unusual processes spawned as children of svchost.exe. While svchost legitimately hosts Windows services, spawning interactive shells or scripting engines is a strong indicator of process injection or service-based payload execution (T1055, T1059).",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.execution", "attack.t1055"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "ParentImage|endswith": ["\\svchost.exe"],
+      "Image|endswith": ["\\cmd.exe", "\\powershell.exe", "\\pwsh.exe", "\\wscript.exe", "\\cscript.exe", "\\mshta.exe", "\\rundll32.exe", "\\regsvr32.exe", "\\certutil.exe"]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legitimate Windows Update or service operations may spawn cmd.exe"]
+}

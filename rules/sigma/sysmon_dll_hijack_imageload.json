@@ -1,0 +1,25 @@
+{
+  "title": "Suspicious DLL Loaded from Writable Path — Sysmon ImageLoad",
+  "id": "e6f7a8b9-c0d1-2345-efab-678901234567",
+  "status": "stable",
+  "description": "Detects DLL loaded by a process from user-writable locations (Temp, AppData, Downloads, ProgramData). Unsigned DLLs loaded from writable paths are a strong indicator of DLL hijacking or sideloading.",
+  "level": "high",
+  "tags": ["attack.defense_evasion", "attack.persistence", "attack.t1574.001", "attack.t1574.002"],
+  "logsource": {"category": "sysmon_imageload", "product": "windows"},
+  "detection": {
+    "selection_writable": {
+      "ImageLoaded|contains": [
+        "\\Temp\\",
+        "\\AppData\\",
+        "\\Downloads\\",
+        "\\ProgramData\\",
+        "\\Users\\Public\\"
+      ]
+    },
+    "filter_signed": {
+      "Signed": "true"
+    },
+    "condition": "selection_writable and not filter_signed"
+  },
+  "falsepositives": ["Legitimate software installers unpacking to Temp", "Developer builds"]
+}

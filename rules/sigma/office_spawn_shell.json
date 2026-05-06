@@ -1,0 +1,22 @@
+{
+  "title": "Office Application Spawning Shell or Script Interpreter",
+  "id": "f7a8b9c0-d1e2-3456-fabc-345678901234",
+  "status": "stable",
+  "description": "Detects Microsoft Office applications (Word, Excel, PowerPoint, Outlook) spawning command-line interpreters, scripting engines, or network tools. This is a primary indicator of macro-based malware, phishing document exploitation, or DDE attack. Legitimate Office documents almost never spawn cmd.exe or powershell.exe.",
+  "level": "high",
+  "tags": ["attack.execution", "attack.initial_access", "attack.t1566.001", "attack.t1204.002", "attack.t1059"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "ParentImage|contains": ["\\WINWORD.EXE", "\\EXCEL.EXE", "\\POWERPNT.EXE", "\\OUTLOOK.EXE", "\\MSPUB.EXE"],
+      "Image|endswith": [
+        "\\cmd.exe", "\\powershell.exe", "\\pwsh.exe",
+        "\\wscript.exe", "\\cscript.exe", "\\mshta.exe",
+        "\\regsvr32.exe", "\\rundll32.exe", "\\certutil.exe",
+        "\\bitsadmin.exe", "\\wmic.exe", "\\net.exe", "\\net1.exe"
+      ]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Rare: macro-heavy administrative tools built on Office"]
+}

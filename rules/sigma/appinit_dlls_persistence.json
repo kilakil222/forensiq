@@ -1,0 +1,21 @@
+{
+  "title": "AppInit_DLLs Registry Persistence",
+  "id": "c3d4e5f6-a7b8-9012-cdef-345678901234",
+  "status": "stable",
+  "description": "Detects modification of the AppInit_DLLs registry key, which causes listed DLLs to be injected into every process that loads user32.dll. This is a common malware persistence mechanism to ensure code execution across all GUI processes on the system.",
+  "level": "high",
+  "tags": ["attack.persistence", "attack.t1546.010"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_reg": {
+      "Image|endswith": ["\\reg.exe"],
+      "CommandLine|contains": ["AppInit_DLLs"]
+    },
+    "selection_ps": {
+      "Image|endswith": ["\\powershell.exe", "\\pwsh.exe"],
+      "CommandLine|contains": ["AppInit_DLLs"]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Legitimate software using AppInit_DLLs for accessibility or input method DLLs"]
+}

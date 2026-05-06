@@ -1,0 +1,20 @@
+{
+  "title": "Admin Share Access for Lateral Movement",
+  "id": "f6a7b8c9-d0e1-2345-fabc-345678901234",
+  "status": "stable",
+  "description": "Detects use of net.exe or net1.exe to access administrative shares (C$, ADMIN$, IPC$) on remote systems. This is a primary lateral movement technique used by attackers and malware to spread across the network (T1021.002).",
+  "level": "high",
+  "tags": ["attack.lateral_movement", "attack.t1021.002"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection": {
+      "Image|endswith": ["\\net.exe", "\\net1.exe"],
+      "CommandLine|contains": ["use "]
+    },
+    "selection_shares": {
+      "CommandLine|contains": ["\\\\", "\\c$", "\\C$", "\\admin$", "\\ADMIN$", "\\ipc$", "\\IPC$"]
+    },
+    "condition": "selection and selection_shares"
+  },
+  "falsepositives": ["Legitimate IT operations mapping drives to file servers"]
+}

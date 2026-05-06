@@ -1,0 +1,17 @@
+{
+  "title": "PIF or SCR File Created in User Directory",
+  "id": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f",
+  "status": "stable",
+  "description": "Detects .pif or .scr files in user directories. These extensions execute as PE files but bypass some security controls.",
+  "level": "high",
+  "tags": ["attack.execution", "attack.t1204.002", "attack.defense_evasion"],
+  "logsource": {"category": "file_event", "product": "windows"},
+  "detection": {
+    "selection": {
+      "TargetFilename|contains": ["\\Users\\"],
+      "TargetFilename|endswith": [".pif", ".scr"]
+    },
+    "condition": "selection"
+  },
+  "falsepositives": ["Legacy screensavers in user profile"]
+}

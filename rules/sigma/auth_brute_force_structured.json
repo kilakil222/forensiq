@@ -1,0 +1,19 @@
+{
+  "title": "Brute Force — Multiple Failed Logons from Single Source",
+  "id": "d1e2f3a4-b5c6-7890-defa-123456789012",
+  "status": "stable",
+  "description": "Detects password brute force attacks using structured auth_events table: multiple Event 4625 (failed logon) from a single source IP or targeting a single account. More precise than message-text matching.",
+  "level": "high",
+  "tags": ["attack.credential_access", "attack.t1110.001"],
+  "logsource": {"category": "auth", "product": "windows"},
+  "detection": {
+    "selection": {
+      "EventID": 4625
+    },
+    "filter_machine_accounts": {
+      "User|endswith": "$"
+    },
+    "condition": "selection and not filter_machine_accounts"
+  },
+  "falsepositives": ["Users mistyping passwords", "Applications with stale credentials"]
+}

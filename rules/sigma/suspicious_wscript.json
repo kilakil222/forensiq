@@ -1,0 +1,21 @@
+{
+  "title": "Suspicious WScript/CScript Execution",
+  "description": "WScript or CScript executing scripts from suspicious locations (Temp, Downloads, network share, base64) — common malware dropper and persistence technique",
+  "logsource": "process_creation",
+  "confidence": "HIGH",
+  "technique": "T1059.005",
+  "detection": {
+    "condition": "selection",
+    "selection": {
+      "Image|endswith": ["\\wscript.exe", "\\cscript.exe"],
+      "CommandLine|contains|any": [
+        "\\Temp\\", "\\AppData\\", "\\Downloads\\",
+        "\\Users\\Public\\", "http://", "https://",
+        "\\\\", ".vbs", ".js", ".jse", ".vbe",
+        "//B", "//E:jscript", "//E:vbscript", "FromBase64"
+      ]
+    }
+  },
+  "fields": ["Image", "CommandLine", "ParentImage", "User"],
+  "falsepositives": ["Legitimate admin scripts in temp dirs"]
+}

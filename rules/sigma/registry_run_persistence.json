@@ -1,0 +1,29 @@
+{
+  "title": "Registry Run Key Persistence via reg.exe or PowerShell",
+  "id": "b3c4d5e6-f7a8-9012-bcde-f01234567890",
+  "status": "stable",
+  "description": "Detects modification of HKCU/HKLM Run and RunOnce registry keys using reg.exe or PowerShell — the most common persistence technique. Attackers add entries to auto-start malware on login. Covers both direct reg.exe ADD and PowerShell New-ItemProperty/Set-ItemProperty calls.",
+  "level": "high",
+  "tags": ["attack.persistence", "attack.t1547.001"],
+  "logsource": {"category": "process_creation", "product": "windows"},
+  "detection": {
+    "selection_reg": {
+      "Image|endswith": ["\\reg.exe"],
+      "CommandLine|contains|all": ["ADD"],
+      "CommandLine|contains": [
+        "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        "\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon"
+      ]
+    },
+    "selection_powershell": {
+      "Image|endswith": ["\\powershell.exe", "\\pwsh.exe"],
+      "CommandLine|contains": [
+        "CurrentVersion\\Run",
+        "New-ItemProperty",
+        "Set-ItemProperty"
+      ]
+    },
+    "condition": "1 of selection*"
+  },
+  "falsepositives": ["Software installers adding legitimate autorun entries"]
+}

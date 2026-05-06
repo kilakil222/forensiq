@@ -1,0 +1,13 @@
+{
+  "name": "Lateral Movement Tool Indicators",
+  "level": "high",
+  "tags": ["attack.lateral_movement", "attack.t1570", "attack.t1021"],
+  "strings": [
+    "psexec", "PsExecSvc", "wmiexec", "smbexec", "dcomexec",
+    "impacket", "CrackMapExec", "crackmapexec", "SharpRDP",
+    "Invoke-SMBExec", "Invoke-WMIExec", "atexec",
+    "admin$", "\\\\c$\\\\windows", "IPC$"
+  ],
+  "condition": "any",
+  "targets": ["cmdline", "scriptblock", "events", "paths"]
+}
