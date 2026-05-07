@@ -2259,27 +2259,31 @@ function renderTimeline() {
   const el = $('d-timeline');
   if (!tlData) return;
   const show = {
-    evtx:     $('tl-evtx').checked,
-    auth:     $('tl-auth').checked,
-    defender: $('tl-defender').checked,
-    detect:   $('tl-detect').checked,
-    prefetch: $('tl-prefetch').checked,
+    evtx:      $('tl-evtx').checked,
+    auth:      $('tl-auth').checked,
+    defender:  $('tl-defender').checked,
+    detect:    $('tl-detect').checked,
+    prefetch:  $('tl-prefetch').checked,
     amcache:   $('tl-amcache') && $('tl-amcache').checked,
     userassist:$('tl-userassist') && $('tl-userassist').checked,
     bam_dam:   $('tl-bam_dam') && $('tl-bam_dam').checked,
     mft:       $('tl-mft') && $('tl-mft').checked,
   };
-  let rows = tlData.filter(r => show[(r.source||'').toLowerCase()]);
+  // Track original tlData index so jumpToTlRow can find the row after re-render
+  let indexed = [];
+  tlData.forEach((r, idx) => {
+    if (show[(r.source||'').toLowerCase()]) indexed.push({r, idx});
+  });
   if (window._tlTacticFilter) {
     const {names} = window._tlTacticFilter;
-    rows = rows.filter(r => r.source !== 'detect' || names.has(r.detail));
+    indexed = indexed.filter(({r}) => r.source !== 'detect' || names.has(r.detail));
   }
   const fromVal = $('tl-from') ? $('tl-from').value : '';
   const toVal   = $('tl-to')   ? $('tl-to').value   : '';
-  if (fromVal) rows = rows.filter(r => r.ts && String(r.ts).slice(0,16) >= fromVal);
-  if (toVal)   rows = rows.filter(r => r.ts && String(r.ts).slice(0,16) <= toVal);
+  if (fromVal) indexed = indexed.filter(({r}) => r.ts && String(r.ts).slice(0,16) >= fromVal);
+  if (toVal)   indexed = indexed.filter(({r}) => r.ts && String(r.ts).slice(0,16) <= toVal);
   const tlQ = ($('tl-q')||{value:''}).value.trim().toLowerCase();
-  if (tlQ) rows = rows.filter(r =>
+  if (tlQ) indexed = indexed.filter(({r}) =>
     (r.detail||'').toLowerCase().includes(tlQ) ||
     (r.category||'').toLowerCase().includes(tlQ) ||
     (r.extra||'').toLowerCase().includes(tlQ)
@@ -2287,10 +2291,10 @@ function renderTimeline() {
   const banner = window._tlTacticFilter
     ? `<div style="padding:8px 12px;background:var(--surface2);border-left:3px solid var(--med);margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:13px"><span>ATT&amp;CK tactic: <strong>${esc(window._tlTacticFilter.tactic)}</strong></span><button class="btn" onclick="clearTlFilter()" style="margin-left:auto;font-size:11px">× Clear</button></div>`
     : '';
-  if (!rows.length) { el.innerHTML=banner+'<div class="empty">No timeline data for selected sources.</div>'; return; }
+  if (!indexed.length) { el.innerHTML=banner+'<div class="empty">No timeline data for selected sources.</div>'; return; }
   let html = banner + '<div class="tl">';
   let lastDate = '';
-  for (const r of rows) {
+  for (const {r, idx} of indexed) {
     const src = (r.source||'').toLowerCase();
     const dateStr = String(r.ts||'').slice(0,10);
     if (dateStr && dateStr !== lastDate) {
@@ -2298,20 +2302,42 @@ function renderTimeline() {
       html += `<div style="padding:6px 0 3px 16px;color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.5px;border-left:2px solid var(--border);margin-top:6px">── ${esc(dateStr)} ──</div>`;
     }
     const rowJson = encodeURIComponent(JSON.stringify(r));
-    html += `<div class="tl-row src-${src}" style="cursor:pointer" onclick="tlExpand(this)" data-row="${rowJson}">
+    const jumpBtn = tlQ
+      ? `<button class="ctx-btn" style="margin-left:auto;flex-shrink:0;font-size:10px;padding:2px 8px;opacity:.75" onclick="event.stopPropagation();jumpToTlRow(${idx})" title="Clear search and scroll to this event in full timeline">↵ context</button>`
+      : `<span style="margin-left:auto;color:var(--muted2);font-size:10px;letter-spacing:.5px">▾</span>`;
+    html += `<div class="tl-row src-${src}" style="cursor:pointer" onclick="tlExpand(this)" data-tlidx="${idx}" data-row="${rowJson}">
       <span class="tl-ts">${ts(r.ts)}</span>
       <span class="tl-src">${srcBadge(r.source)}</span>
       <span class="tl-cat" style="font-family:monospace;font-size:11px;color:var(--muted);min-width:48px">${esc(r.category||'')}</span>
       <span class="tl-det">${tlDetail(r)}</span>
       ${r.extra?`<span class="tl-ex" style="opacity:.85" title="${esc(String(r.extra))}">${esc(String(r.extra).slice(0,80))}${(r.extra||'').length>80?'…':''}</span>`:''}
-      <span style="margin-left:auto;color:var(--muted2);font-size:10px;letter-spacing:.5px">▾</span>
+      ${jumpBtn}
     </div>`;
   }
+  const rows = indexed.map(h => h.r);
   const srcBreak = {};
   for (const r of rows) { const s=(r.source||'').toLowerCase(); srcBreak[s]=(srcBreak[s]||0)+1; }
   const srcParts = Object.entries(srcBreak).sort((a,b)=>b[1]-a[1]).map(([s,n])=>`<span class="badge b-${s}" style="font-size:10px">${n} ${s}</span>`).join(' ');
   html += `</div><div class="row-count">${rows.length.toLocaleString()} events &nbsp; ${srcParts}</div>`;
   el.innerHTML = html;
+}
+
+// Clear search, re-render full timeline, scroll to the event and flash it.
+function jumpToTlRow(idx) {
+  const qEl = $('tl-q');
+  if (qEl) qEl.value = '';
+  renderTimeline();
+  requestAnimationFrame(() => {
+    const row = document.querySelector('#d-timeline [data-tlidx="'+idx+'"]');
+    if (!row) return;
+    row.scrollIntoView({behavior:'smooth', block:'center'});
+    row.style.transition = 'background 0.4s';
+    row.style.background = 'rgba(88,166,255,0.18)';
+    setTimeout(() => {
+      row.style.background = 'rgba(88,166,255,0.05)';
+      setTimeout(() => { row.style.background = ''; row.style.transition = ''; }, 700);
+    }, 1400);
+  });
 }
 
 // Inline-expand a timeline row: toggles a detail card below with full parsed
