@@ -11,4 +11,4 @@ ENV CGO_ENABLED=1
 ENV CC=x86_64-w64-mingw32-gcc-posix
 ENV CXX=x86_64-w64-mingw32-g++-posix
 
-RUN go build -mod=vendor -ldflags="-s -w -extldflags '-Wl,-Bstatic -lpthread -Wl,-Bdynamic -static-libgcc -static-libstdc++'" -o forensiq.exe .
+RUN go build -mod=vendor -ldflags="-s -w -extldflags '-Wl,--allow-multiple-definition -Wl,-Bstatic -lpthread -lstdc++ -lm -Wl,-Bdynamic -static-libgcc'" -o forensiq.exe .
