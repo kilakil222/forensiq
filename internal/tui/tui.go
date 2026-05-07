@@ -378,6 +378,10 @@ func analyzeWizard() error {
 	fmt.Println()
 	fmt.Printf("  %s", sDim.Render("Press Enter to start, Ctrl+C to cancel "))
 	reader.ReadString('\n')
+
+	clear()
+	fmt.Println()
+	fmt.Printf("  %s  %s\n", sPrimary.Render("⚡"), sBold.Render("Analyzing: "+name))
 	fmt.Println()
 
 	start := time.Now()

@@ -46,9 +46,6 @@ func Run(opts Options) (*fcase.Case, *RunResult, error) {
 		return nil, nil, err
 	}
 
-	display.Header(opts.CaseName, "v0.1.0")
-	fmt.Println()
-
 	start := time.Now()
 	ch := make(chan parsers.Progress, 256)
 	var wg sync.WaitGroup
@@ -124,6 +121,5 @@ func Run(opts Options) (*fcase.Case, *RunResult, error) {
 
 	pd.Stop()
 	result.Elapsed = time.Since(start)
-	display.Summary(result.TotalArtifacts, result.Elapsed, opts.CasePath)
 	return c, result, nil
 }
