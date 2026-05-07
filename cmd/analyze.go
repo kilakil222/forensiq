@@ -33,7 +33,7 @@ var (
 func init() {
 	analyzeCmd.Flags().StringVar(&flagTriage, "triage", "", "path to triage ZIP")
 	analyzeCmd.Flags().StringVar(&flagRAM, "ram", "", "path to memory dump")
-	analyzeCmd.Flags().StringVar(&flagDisk, "disk", "", "path to disk image (E01 or raw)")
+	analyzeCmd.Flags().StringVar(&flagDisk, "disk", "", "path to disk image (E01, VMDK, or raw)")
 	analyzeCmd.Flags().StringVar(&flagCase, "case", "", "output .fcase path")
 	analyzeCmd.Flags().StringVar(&flagName, "name", "", "case name")
 	analyzeCmd.Flags().BoolVar(&flagNoREPL, "no-repl", false, "batch mode, exit after analysis")

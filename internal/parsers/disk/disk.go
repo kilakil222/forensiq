@@ -1,8 +1,8 @@
 // Package disk provides the top-level dispatcher for disk-image-based
-// analysis. It opens a forensic disk image (raw .dd or EnCase .E01), locates
-// NTFS partitions via the MBR/GPT, walks each NTFS volume's MFT for known
-// forensic targets, and routes the matching files through the existing
-// triage parsers.
+// analysis. It opens a forensic disk image (raw .dd, EnCase .E01, or VMware
+// .vmdk), locates NTFS partitions via the MBR/GPT, walks each NTFS volume's
+// MFT for known forensic targets, and routes the matching files through the
+// existing triage parsers.
 package disk
 
 import (
@@ -21,6 +21,7 @@ import (
 	"forensiq/internal/parsers/ewf"
 	"forensiq/internal/parsers/ntfs"
 	"forensiq/internal/parsers/triage"
+	"forensiq/internal/parsers/vmdk"
 )
 
 // targetPatterns enumerates filenames the NTFS walker should surface. Order
@@ -169,8 +170,15 @@ func Analyze(imagePath string, db *sql.DB, ch chan<- parsers.Progress) error {
 // virtual disk content, the disk size, and a deferred closer.
 func openImage(imagePath string) (io.ReaderAt, int64, func(), error) {
 	ext := strings.ToLower(filepath.Ext(imagePath))
-	if ext == ".e01" {
+	switch ext {
+	case ".e01":
 		d, err := ewf.Open(imagePath)
+		if err != nil {
+			return nil, 0, func() {}, err
+		}
+		return d, d.Size(), func() { d.Close() }, nil
+	case ".vmdk":
+		d, err := vmdk.Open(imagePath)
 		if err != nil {
 			return nil, 0, func() {}, err
 		}
