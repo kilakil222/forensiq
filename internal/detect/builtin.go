@@ -1128,6 +1128,418 @@ WHERE (lower(image) LIKE '%\\temp\\%'
   AND lower(split_part(image, '\\', -1)) LIKE '%.exe'
   AND timestamp >= TIMESTAMP '2000-01-01'`,
 	},
+
+	// ── WannaCry / ransomware-specific indicators ────────────────────────────
+	{
+		id:       "wannacry_file_indicators",
+		name:     "WannaCry ransomware file indicators on disk",
+		severity: "HIGH",
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT DISTINCT 'file', path, 'detect:wannacry_file_indicators', 'HIGH', 'WannaCry/T1486',
+  'Known WannaCry file or encrypted output on disk', modified
+FROM mft WHERE NOT is_dir
+  AND (lower(path) LIKE '%mssecsvc.exe%'
+    OR lower(path) LIKE '%tasksche.exe%'
+    OR lower(path) LIKE '%wannacry%'
+    OR lower(path) LIKE '%wncry%'
+    OR lower(path) LIKE '%@please_read_me@%'
+    OR lower(path) LIKE '%@wannadecryptor@%'
+    OR lower(path) LIKE '%.wncry'
+    OR lower(path) LIKE '%00000000.eky%'
+    OR lower(path) LIKE '%00000000.res%'
+    OR lower(path) LIKE '%00000000.pky%')
+  AND modified >= TIMESTAMP '2000-01-01'`,
+	},
+	{
+		id:       "ransomware_ext_usnjrnl",
+		name:     "WannaCry encrypted extension (.wncry/.wcry) in $UsnJrnl",
+		severity: "HIGH",
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT DISTINCT 'file', path, 'detect:ransomware_ext_usnjrnl', 'HIGH', 'WannaCry/T1486',
+  'WannaCry encrypted file extension detected in $UsnJrnl', MIN(timestamp)
+FROM usnjrnl
+WHERE lower(path) LIKE '%.wncry' OR lower(path) LIKE '%.wcry'
+GROUP BY path`,
+	},
+
+	// ── Service anomaly detectors ────────────────────────────────────────────
+	{
+		id:       "anomalous_routing_svc",
+		name:     "Anomalous routing/pivot service on workstation (IPRIP, RemoteAccess)",
+		severity: "HIGH",
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT DISTINCT 'service',
+  name || ' [' || COALESCE(display_name,'') || ']',
+  'detect:anomalous_routing_svc', 'HIGH', 'T1599/T1021',
+  'Routing or pivot service present on workstation — binary: ' || COALESCE(binary_path,'?'), modified
+FROM services
+WHERE lower(name) IN ('iprip','remoteaccess','rrasman','router','iphlpsvc_routing')
+UNION ALL
+SELECT DISTINCT 'event',
+  'routing_svc_event_' || CAST(event_id AS VARCHAR),
+  'detect:anomalous_routing_svc', 'HIGH', 'T1599',
+  'Routing service start/stop event: ' || LEFT(message, 200), timestamp
+FROM evtx_events
+WHERE event_id IN (29031, 20189, 20190)
+  AND timestamp >= TIMESTAMP '2000-01-01'`,
+	},
+	{
+		id:       "mssql_attack_surface",
+		name:     "SQL Server mixed-auth + auto-start = potential attack surface (T1190)",
+		severity: "HIGH",
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT DISTINCT 'service', name,
+  'detect:mssql_attack_surface', 'HIGH', 'T1190',
+  'SQL Server auto-started with mixed auth — sa account may be accessible via SMB named pipe', modified
+FROM services
+WHERE (lower(name) LIKE '%mssql%' OR lower(display_name) LIKE '%sql server%')
+  AND lower(start_type) IN ('auto', 'automatic', '2', 'autostart')
+UNION ALL
+SELECT DISTINCT 'event', CAST(event_id AS VARCHAR),
+  'detect:mssql_attack_surface', 'HIGH', 'T1190',
+  'SQL Server mixed-auth mode enabled (EID 15268): ' || LEFT(message, 200), timestamp
+FROM evtx_events
+WHERE event_id = 15268
+  AND timestamp >= TIMESTAMP '2000-01-01'`,
+	},
+	{
+		id:       "service_binary_wannacry_ts",
+		name:     "Service binary with WannaCry/mssecsvc PE timestamp (0x4CE78ECC)",
+		severity: "HIGH",
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT DISTINCT 'service', name || ': ' || COALESCE(binary_path,'?'),
+  'detect:service_binary_wannacry_ts', 'HIGH', 'WannaCry/T1543.003',
+  'Service binary matches known WannaCry filenames (mssecsvc/tasksche)', modified
+FROM services
+WHERE lower(binary_path) LIKE '%mssecsvc%'
+   OR lower(binary_path) LIKE '%tasksche%'
+   OR lower(binary_path) LIKE '%wannacry%'`,
+	},
+
+	// ── Authentication anomalies ─────────────────────────────────────────────
+	{
+		id:       "anon_smb_cluster",
+		name:     "Anonymous SMB logon cluster — EternalBlue/lateral movement indicator (T1021.002)",
+		severity: "HIGH",
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT 'ip', COALESCE(NULLIF(src_ip,''), COALESCE(workstation,'unknown')),
+  'detect:anon_smb_cluster', 'HIGH', 'T1021.002/EternalBlue',
+  'Anonymous SMB logon cluster: ' || COUNT(*) || ' events (logon_type=3, null session)',
+  MIN(timestamp)
+FROM auth_events
+WHERE (lower("user") IN ('anonymous logon','anonymous','')
+    OR "user" IS NULL)
+  AND logon_type = 3
+  AND timestamp >= TIMESTAMP '2000-01-01'
+GROUP BY COALESCE(NULLIF(src_ip,''), COALESCE(workstation,'unknown'))
+HAVING COUNT(*) >= 3`,
+	},
+
+	// ── Event log gap detection ──────────────────────────────────────────────
+	{
+		id:       "event_log_gap",
+		name:     "Event log gap >7 days — possible log tampering or system offline (T1070.001)",
+		severity: "HIGH",
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT 'event',
+  'log_gap:' || channel,
+  'detect:event_log_gap', 'HIGH', 'T1070.001',
+  'Log gap of ' || CAST(CAST(gap_days AS INTEGER) AS VARCHAR) || ' days in channel=' || channel ||
+    ' (last event before gap: ' || CAST(prev_ts AS VARCHAR) || ')',
+  curr_ts
+FROM (
+  SELECT channel,
+    LAG(timestamp) OVER (PARTITION BY channel ORDER BY timestamp) AS prev_ts,
+    timestamp AS curr_ts,
+    DATEDIFF('day',
+      LAG(timestamp) OVER (PARTITION BY channel ORDER BY timestamp),
+      timestamp) AS gap_days
+  FROM evtx_events
+  WHERE timestamp >= TIMESTAMP '2000-01-01'
+) t
+WHERE gap_days > 7 AND prev_ts IS NOT NULL`,
+	},
+
+	// ── AnyDesk remote access ────────────────────────────────────────────────
+	{
+		id:            "anydesk_incoming_session",
+		name:          "AnyDesk incoming remote-access session",
+		severity:      "HIGH",
+		requireTables: []string{"anydesk_sessions"},
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT DISTINCT 'network',
+  COALESCE(NULLIF(anydesk_id,''), COALESCE(client_alias,'unknown')) || ' [' || direction || ']',
+  'detect:anydesk_incoming_session', 'HIGH', 'T1219',
+  'AnyDesk remote session: auth=' || COALESCE(auth_method,'?') ||
+    ' alias=' || COALESCE(client_alias,'?') ||
+    ' id=' || COALESCE(anydesk_id,'?') ||
+    ' file=' || COALESCE(source_file,'?'),
+  timestamp
+FROM anydesk_sessions
+WHERE direction = 'Incoming'`,
+	},
+	{
+		id:            "anydesk_unattended_config",
+		name:          "AnyDesk configured for unattended access (security.permission_profiles)",
+		severity:      "MED",
+		requireTables: []string{"anydesk_config"},
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT DISTINCT 'config',
+  key || '=' || value,
+  'detect:anydesk_unattended_config', 'MED', 'T1219',
+  'AnyDesk unattended access config: ' || key || '=' || value || ' [' || source_file || ']',
+  NULL
+FROM anydesk_config
+WHERE lower(key) LIKE '%unattended%'
+   OR lower(key) LIKE '%permission%'
+   OR key = 'ad.anynet.fpr'`,
+	},
+
+	// ── WER crash correlation ────────────────────────────────────────────────
+	{
+		id:            "wer_crash_suspicious_app",
+		name:          "WER crash: system process crash during attack window (possible exploit/injection)",
+		severity:      "MED",
+		requireTables: []string{"wer_crashes"},
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT DISTINCT 'process',
+  app_name || ' [exc=' || COALESCE(exception_code,'?') || ']',
+  'detect:wer_crash_suspicious_app', 'MED', 'T1203',
+  'Process crash: ' || COALESCE(app_name,'?') || ' fault_module=' || COALESCE(fault_module,'?') ||
+    ' exception=' || COALESCE(exception_code,'?') || ' at offset=' || COALESCE(exception_offset,'?'),
+  crash_time
+FROM wer_crashes
+WHERE crash_time >= TIMESTAMP '2000-01-01'
+  AND (lower(app_name) IN ('taskhost.exe','lsass.exe','svchost.exe','services.exe',
+                            'spoolsv.exe','winlogon.exe','csrss.exe','wininit.exe')
+    OR exception_code IN ('c0000005','c0000374','80000003','c0000409'))`,
+	},
+
+	// ── DHCP / network config events ────────────────────────────────────────
+	{
+		id:       "dhcp_network_config",
+		name:     "DHCP configuration event — records network topology (gateway, IP assignment)",
+		severity: "LOW",
+		insertSQL: `INSERT INTO ioc_indicators("type","value","source","confidence","related_campaign","notes","first_seen")
+SELECT DISTINCT 'network',
+  'dhcp_event_' || CAST(event_id AS VARCHAR),
+  'detect:dhcp_network_config', 'LOW', NULL,
+  'DHCP/network event ' || CAST(event_id AS VARCHAR) || ': ' || LEFT(message, 300),
+  timestamp
+FROM evtx_events
+WHERE event_id IN (4198, 4199, 4200, 4201, 4202, 4203, 4204, 4205)
+  AND timestamp >= TIMESTAMP '2000-01-01'
+LIMIT 30`,
+	},
+
+	// ── BITS download jobs ───────────────────────────────────────────────────
+	{
+		id:       "bits_suspicious_download",
+		name:     "BITS used for suspicious download (LOLBin/C2)",
+		severity: "HIGH",
+		insertSQL: `INSERT INTO ioc_indicators (type, value, source, confidence, related_campaign, first_seen, notes)
+SELECT 'url', f.remote_url, 'detect:bits_suspicious_download', 'HIGH', 'T1197',
+    j.created_at,
+    'BITS job: ' || COALESCE(j.job_name,'?') || ' | owner=' || COALESCE(j.owner,'?') || ' | state=' || COALESCE(j.state_name,'?')
+FROM bits_files f
+JOIN bits_jobs j ON f.job_guid = j.job_guid
+WHERE f.remote_url IS NOT NULL
+  AND (
+    f.remote_url NOT LIKE 'https://%.microsoft.com/%'
+    AND f.remote_url NOT LIKE 'https://%.windowsupdate.com/%'
+    AND f.remote_url NOT LIKE 'https://%.windows.com/%'
+    AND f.remote_url NOT LIKE 'https://ctldl.windowsupdate.com/%'
+  )`,
+	},
+	{
+		id:       "ad_accounts_with_old_logon",
+		name:     "AD accounts with stale or suspicious last logon",
+		severity: "MED",
+		insertSQL: `INSERT INTO ioc_indicators (type, value, source, confidence, related_campaign, first_seen, notes)
+SELECT 'user', sam_account_name, 'detect:ad_accounts_with_old_logon', 'MED', 'T1078',
+    last_logon,
+    'AD account | disabled=' || CAST(is_disabled AS VARCHAR) || ' | bad_pwd=' || CAST(COALESCE(bad_pwd_count,0) AS VARCHAR) || ' | flags=' || CAST(COALESCE(account_flags,0) AS VARCHAR)
+FROM ntds_accounts
+WHERE sam_account_name IS NOT NULL
+  AND NOT sam_account_name LIKE '%$'
+  AND (is_disabled = false OR is_disabled IS NULL)
+  AND (last_logon IS NULL OR last_logon < CURRENT_TIMESTAMP - INTERVAL '180 days')`,
+	},
+}
+
+// enrichments run UPDATE/INSERT statements before detectors to denormalize cross-table data.
+// They are best-effort: failures are logged but do not abort detection.
+var enrichments = []string{
+	// Populate prefetch.first_seen from the .pf file creation timestamp in MFT.
+	`UPDATE prefetch
+	 SET first_seen = (
+	   SELECT m.created FROM mft m
+	   WHERE m.path LIKE '%.pf'
+	     AND lower(split_part(m.path, '/', -1)) = lower(prefetch.filename)
+	   LIMIT 1
+	 )
+	 WHERE first_seen IS NULL`,
+
+	// Extract BAM/DAM (Background Activity Monitor) last-run timestamps from SYSTEM registry.
+	// Key: HKLM\SYSTEM\CurrentControlSet\Services\bam\UserSettings\<SID>
+	// Value name = exe path, value data = 8-byte FILETIME little-endian hex.
+	`INSERT INTO bam_dam (path, last_run, sid, source)
+	 SELECT value_name, epoch_ms(
+	   CAST((
+	     CAST(('x' || lpad(substr(value_data, 15, 2) || substr(value_data, 13, 2) ||
+	           substr(value_data, 11, 2) || substr(value_data, 9, 2) ||
+	           substr(value_data, 7, 2) || substr(value_data, 5, 2) ||
+	           substr(value_data, 3, 2) || substr(value_data, 1, 2), 16, '0') AS BIGINT) - 116444736000000000
+	     ) * 100 / 1000000 AS BIGINT)
+	   ),
+	   split_part(key_path, chr(92), -1),
+	   'BAM'
+	 FROM registry_raw
+	 WHERE (key_path ILIKE '%\\bam\\usersettings\\%' OR key_path ILIKE '%\\bam\\state\\usersettings\\%'
+	        OR key_path ILIKE '%\\dam\\usersettings\\%')
+	   AND value_name LIKE '%\\%'
+	   AND length(value_data) >= 16
+	 ON CONFLICT DO NOTHING`,
+
+	// TypedURLs — IE/Edge URLs typed directly into the address bar
+	`INSERT INTO typed_urls (url, visit_order, "user", source)
+ SELECT value_data,
+        CAST(replace(value_name, 'url', '') AS INTEGER),
+        split_part(key_path, chr(92), 3),
+        key_path
+ FROM registry_raw
+ WHERE key_path ILIKE '%\Software\Microsoft\Internet Explorer\TypedURLs%'
+   AND value_name LIKE 'url%'
+   AND value_data IS NOT NULL
+ ON CONFLICT DO NOTHING`,
+
+	// RunMRU — run dialog command history
+	`INSERT INTO run_mru (command, mru_order, "user", modified)
+ SELECT value_data,
+        value_name,
+        split_part(key_path, chr(92), 3),
+        modified
+ FROM registry_raw
+ WHERE key_path ILIKE '%\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU%'
+   AND value_name != 'MRUList'
+   AND value_data IS NOT NULL
+ ON CONFLICT DO NOTHING`,
+
+	// RDP client history — TerminalServerClient servers
+	`INSERT INTO rdp_client_history (server, username, "user", modified)
+ SELECT
+   CASE WHEN value_name = 'UsernameHint'
+     THEN split_part(key_path, chr(92), -1)
+     ELSE value_name
+   END AS server,
+   CASE WHEN value_name = 'UsernameHint' THEN value_data ELSE '' END AS username,
+   split_part(key_path, chr(92), 3),
+   modified
+ FROM registry_raw
+ WHERE key_path ILIKE '%\Software\Microsoft\Terminal Server Client\Servers\%'
+   AND (value_name = 'UsernameHint' OR value_name = 'MRU0')
+ ON CONFLICT DO NOTHING`,
+
+	// MUICache — tracks executed application display names
+	`INSERT INTO muicache (exe_path, description, "user", modified)
+ SELECT value_name, value_data,
+        split_part(key_path, chr(92), 3),
+        modified
+ FROM registry_raw
+ WHERE (key_path ILIKE '%\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache%'
+     OR key_path ILIKE '%\Software\Microsoft\Windows\ShellNoRoam\MUICache%')
+   AND value_name LIKE '%\%'
+ ON CONFLICT DO NOTHING`,
+
+	// OpenSaveMRU — files opened/saved via common dialogs
+	`INSERT INTO opensave_mru (path, extension, mru_order, "user", modified)
+ SELECT value_data,
+        split_part(key_path, chr(92), -1),
+        value_name,
+        split_part(key_path, chr(92), 3),
+        modified
+ FROM registry_raw
+ WHERE key_path ILIKE '%\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU\%'
+   AND value_name != 'MRUListEx'
+   AND value_type IN ('REG_SZ', 'REG_EXPAND_SZ')
+ ON CONFLICT DO NOTHING`,
+
+	// USB History — USBSTOR key: each subkey is device class, below it are individual devices
+	// Key pattern: SYSTEM\CurrentControlSet\Enum\USBSTOR\Disk&Ven_*&Prod_*\<serial>
+	// We extract friendly name from FriendlyName value, serial from last segment of key path.
+	`INSERT INTO usb_history (device_id, friendly_name, serial_number, source)
+ SELECT DISTINCT
+   key_path,
+   value_data,
+   split_part(key_path, chr(92), -1),
+   'USBSTOR'
+ FROM registry_raw
+ WHERE key_path ILIKE '%\Enum\USBSTOR\%'
+   AND value_name = 'FriendlyName'
+   AND value_data IS NOT NULL
+ ON CONFLICT DO NOTHING`,
+
+	// USB drive letters — MountedDevices or DriveLetters linked to USB serials
+	// StorageDevicePolicies for write-protect, DeviceClasses for last arrival time.
+	// Simpler: pull drive letter hints from SYSTEM\MountedDevices
+	`UPDATE usb_history
+ SET drive_letter = sub.letter
+ FROM (
+   SELECT value_name AS letter, value_data AS raw
+   FROM registry_raw
+   WHERE key_path ILIKE '%\MountedDevices%'
+     AND value_name LIKE '\DosDevices\%'
+ ) sub
+ WHERE usb_history.serial_number IS NOT NULL
+   AND sub.raw ILIKE '%' || usb_history.serial_number || '%'`,
+
+	// Network adapters — from SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces
+	`INSERT INTO network_adapters (adapter_name, ip_address, subnet_mask, default_gateway, dns_servers, dhcp_enabled, source)
+ SELECT
+   split_part(key_path, chr(92), -1) AS adapter_name,
+   MAX(CASE WHEN value_name = 'IPAddress'      THEN value_data END) AS ip_address,
+   MAX(CASE WHEN value_name = 'SubnetMask'     THEN value_data END) AS subnet_mask,
+   MAX(CASE WHEN value_name = 'DefaultGateway' THEN value_data END) AS default_gateway,
+   MAX(CASE WHEN value_name IN ('NameServer','DhcpNameServer') THEN value_data END) AS dns_servers,
+   MAX(CASE WHEN value_name = 'EnableDHCP'     THEN value_data END) AS dhcp_enabled,
+   'registry'
+ FROM registry_raw
+ WHERE key_path ILIKE '%\Services\Tcpip\Parameters\Interfaces\%'
+   AND value_name IN ('IPAddress','SubnetMask','DefaultGateway','NameServer','DhcpNameServer','EnableDHCP','DhcpIPAddress','DhcpSubnetMask','DhcpDefaultGateway')
+ GROUP BY split_part(key_path, chr(92), -1)
+ HAVING MAX(CASE WHEN value_name IN ('IPAddress','DhcpIPAddress') THEN value_data END) IS NOT NULL
+ ON CONFLICT DO NOTHING`,
+
+	// Network adapter descriptions (friendly names) from {4D36E972} class
+	`UPDATE network_adapters
+ SET description = sub.desc
+ FROM (
+   SELECT split_part(key_path, chr(92), -1) AS guid,
+          value_data AS desc
+   FROM registry_raw
+   WHERE key_path ILIKE '%\{4D36E972%'
+     AND value_name = 'DriverDesc'
+ ) sub
+ WHERE network_adapters.adapter_name = sub.guid`,
+
+	// Installed software — HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall
+	`INSERT INTO installed_software (display_name, display_version, publisher, install_date, install_location, uninstall_string, "user", source)
+ SELECT
+   MAX(CASE WHEN value_name = 'DisplayName'     THEN value_data END),
+   MAX(CASE WHEN value_name = 'DisplayVersion'  THEN value_data END),
+   MAX(CASE WHEN value_name = 'Publisher'       THEN value_data END),
+   MAX(CASE WHEN value_name = 'InstallDate'     THEN value_data END),
+   MAX(CASE WHEN value_name = 'InstallLocation' THEN value_data END),
+   MAX(CASE WHEN value_name = 'UninstallString' THEN value_data END),
+   split_part(key_path, chr(92), 3),
+   'Uninstall'
+ FROM registry_raw
+ WHERE (key_path ILIKE '%\Microsoft\Windows\CurrentVersion\Uninstall\%'
+     OR key_path ILIKE '%\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\%')
+   AND value_name IN ('DisplayName','DisplayVersion','Publisher','InstallDate','InstallLocation','UninstallString')
+ GROUP BY split_part(key_path, chr(92), -2), split_part(key_path, chr(92), 3)
+ HAVING MAX(CASE WHEN value_name = 'DisplayName' THEN value_data END) IS NOT NULL
+ ON CONFLICT DO NOTHING`,
 }
 
 // tableHasData returns true when the named table has at least one row.
@@ -1149,6 +1561,8 @@ func CheckCoverage(db *sql.DB) DataCoverage {
 		"usnjrnl", "mem_pslist", "mem_psscan", "mem_cmdline", "mem_malfind", "mem_netscan",
 		"linux_auth", "shell_history", "proc_creation",
 		"sysmon_process", "sysmon_network", "sysmon_dns", "sysmon_imageload",
+		"wer_crashes", "anydesk_sessions", "anydesk_events", "anydesk_config",
+		"srum_network_usage", "srum_app_usage", "bam_dam",
 	}
 	cov := DataCoverage{Sources: make(map[string]bool, len(sources))}
 	for _, s := range sources {
@@ -1179,6 +1593,13 @@ func RunAll(db *sql.DB) ([]Result, error) {
 
 	if _, err := db.Exec(`DELETE FROM ioc_indicators WHERE source LIKE 'detect:%'`); err != nil {
 		return nil, fmt.Errorf("detect: clear previous results: %w", err)
+	}
+
+	// Run enrichments (cross-table denormalization) before detectors.
+	for _, sql := range enrichments {
+		if _, err := db.Exec(sql); err != nil {
+			display.ParserErr("detect:enrich", err)
+		}
 	}
 
 	var results []Result

@@ -341,7 +341,7 @@ td.expand-cell{max-width:none;white-space:pre-wrap;word-break:break-all;font-fam
 }
 .tl-row:hover{background:rgba(88,166,255,.04);border-left-color:var(--accent)}
 .tl-row-open{background:rgba(88,166,255,.08);border-left-color:var(--accent2) !important}
-.tl-row-open span:last-child{transform:rotate(180deg);display:inline-block;color:var(--accent2) !important}
+.tl-row-open .tl-chevron{transform:rotate(180deg);display:inline-block;color:var(--accent2) !important}
 .tl-expand{animation:fadeIn .18s var(--ease)}
 .tl-row::before{content:'';position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:var(--surface3);border:2px solid var(--border);transition:all .15s var(--ease);box-shadow:0 0 0 3px var(--bg)}
 .tl-row:hover::before{transform:translateY(-50%) scale(1.2)}
@@ -600,6 +600,7 @@ td.expand-cell{max-width:none;white-space:pre-wrap;word-break:break-all;font-fam
         <button class="sb-item" data-v="files"><span class="sb-icon">▸</span><span class="sb-label">MFT / Files</span></button>
         <button class="sb-item" data-v="hashes"><span class="sb-icon">▸</span><span class="sb-label">Hashes</span></button>
         <button class="sb-item" data-v="browser"><span class="sb-icon">▸</span><span class="sb-label">Browser</span></button>
+        <button class="sb-item" data-v="mail"><span class="sb-icon">▸</span><span class="sb-label">Mail</span><span class="sb-badge" id="nb-mail" style="display:none"></span></button>
         <div class="sb-sub-label">Events</div>
         <button class="sb-item" data-v="events"><span class="sb-icon">▸</span><span class="sb-label">Events</span><span class="sb-badge" id="nb-evt" style="display:none"></span></button>
         <button class="sb-item" data-v="lateral"><span class="sb-icon">▸</span><span class="sb-label">Lateral Mvmt</span></button>
@@ -610,6 +611,21 @@ td.expand-cell{max-width:none;white-space:pre-wrap;word-break:break-all;font-fam
         <button class="sb-item" data-v="users"><span class="sb-icon">▸</span><span class="sb-label">Users</span></button>
         <button class="sb-item" data-v="ioc"><span class="sb-icon">▸</span><span class="sb-label">IOC Indicators</span></button>
         <button class="sb-item" data-v="notes"><span class="sb-icon">▸</span><span class="sb-label">Notes</span></button>
+        <div class="sb-sub-label">Remote Access</div>
+        <button class="sb-item" data-v="anydesk"><span class="sb-icon">▸</span><span class="sb-label">AnyDesk</span></button>
+        <div class="sb-sub-label">System Telemetry</div>
+        <button class="sb-item" data-v="srum"><span class="sb-icon">▸</span><span class="sb-label">SRUM</span></button>
+        <button class="sb-item" data-v="bam-dam"><span class="sb-icon">▸</span><span class="sb-label">BAM/DAM</span></button>
+        <button class="sb-item" data-v="wer"><span class="sb-icon">▸</span><span class="sb-label">WER Crashes</span></button>
+        <button class="sb-item" data-v="bits"><span class="sb-icon">▸</span><span class="sb-label">BITS Jobs</span></button>
+        <div class="sb-sub-label">AD / Domain</div>
+        <button class="sb-item" data-v="ntds"><span class="sb-icon">▸</span><span class="sb-label">AD Accounts</span></button>
+        <div class="sb-sub-label">User Traces</div>
+        <button class="sb-item" data-v="reg-mru"><span class="sb-icon">▸</span><span class="sb-label">Registry MRU</span></button>
+        <button class="sb-item" data-v="usb"><span class="sb-icon">▸</span><span class="sb-label">USB History</span></button>
+        <div class="sb-sub-label">Host Info</div>
+        <button class="sb-item" data-v="net-adapters"><span class="sb-icon">▸</span><span class="sb-label">Network Adapters</span></button>
+        <button class="sb-item" data-v="software"><span class="sb-icon">▸</span><span class="sb-label">Installed Software</span></button>
       </div>
     </div>
 
@@ -932,6 +948,24 @@ td.expand-cell{max-width:none;white-space:pre-wrap;word-break:break-all;font-fam
   <div id="d-browser"><div class="loading">Loading…</div></div>
 </div>
 
+<div id="v-mail" class="view">
+  <div class="filter-row">
+    <input class="fi fi-grow" id="mail-q" placeholder="Search subject, sender, body…" oninput="loadMail()">
+    <button class="qbtn active" id="mail-btn-all" onclick="mailHasAtt=false;document.querySelectorAll('#v-mail .qbtn').forEach(b=>b.classList.remove('active'));this.classList.add('active');loadMail()">All</button>
+    <button class="qbtn" onclick="mailHasAtt=true;document.querySelectorAll('#v-mail .qbtn').forEach(b=>b.classList.remove('active'));this.classList.add('active');loadMail()">With Attachments</button>
+    <button class="btn" onclick="loadMail()">Search</button>
+  </div>
+  <div id="mail-kpis" class="kpi-row" style="margin-top:12px"></div>
+  <div style="display:flex;gap:12px;margin-top:12px;height:calc(100vh - 200px);min-height:400px">
+    <div id="mail-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+      <div class="loading">Loading…</div>
+    </div>
+    <div id="mail-detail" style="width:520px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow-y:auto;padding:16px;display:none">
+      <div class="empty" style="color:var(--muted)">Select an email to view details</div>
+    </div>
+  </div>
+</div>
+
 <div id="v-lateral" class="view">
   <div class="filter-row">
     <input class="fi fi-grow" id="lat-q" placeholder="Search user, IP, share…">
@@ -1075,42 +1109,237 @@ td.expand-cell{max-width:none;white-space:pre-wrap;word-break:break-all;font-fam
   </div>
 </div>
 
+
+<div id="v-anydesk" class="view">
+  <div class="filter-row">
+    <span style="color:var(--muted);font-size:12px">AnyDesk remote control sessions, log events, and configuration</span>
+  </div>
+  <div id="d-anydesk-stats" class="kpi-row" style="margin-bottom:12px"></div>
+  <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+    <button class="qbtn active" id="ad-tab-sessions" onclick="adTab('sessions',this)">Sessions</button>
+    <button class="qbtn" id="ad-tab-events" onclick="adTab('events',this)">Log Events</button>
+    <button class="qbtn" id="ad-tab-config" onclick="adTab('config',this)">Config</button>
+  </div>
+  <div id="d-anydesk-sessions"><div class="loading">Loading…</div></div>
+  <div id="d-anydesk-events" style="display:none"></div>
+  <div id="d-anydesk-config" style="display:none"></div>
+</div>
+
+<div id="v-wer" class="view">
+  <div class="filter-row">
+    <input class="fi fi-grow" id="wer-q" placeholder="Search app name, fault module, exception code…">
+    <button class="btn" onclick="loadWer()">Search</button>
+  </div>
+  <div id="d-wer-stats" class="kpi-row" style="margin-bottom:12px"></div>
+  <div id="d-wer"><div class="loading">Loading…</div></div>
+</div>
+
+<div id="v-srum" class="view">
+  <div class="filter-row">
+    <input class="fi fi-grow" id="srum-q" placeholder="Filter by app name…">
+    <button class="qbtn active" id="srum-tab-net" onclick="srumTab('net',this)">Network Usage</button>
+    <button class="qbtn" id="srum-tab-app" onclick="srumTab('app',this)">App Usage</button>
+    <button class="btn" onclick="loadSrum()">Filter</button>
+  </div>
+  <div id="d-srum-top" style="margin-bottom:12px"></div>
+  <div id="d-srum-net"><div class="loading">Loading…</div></div>
+  <div id="d-srum-app" style="display:none"></div>
+</div>
+
+<div id="v-bam-dam" class="view">
+  <div class="filter-row">
+    <input class="fi fi-grow" id="bam-q" placeholder="Filter by executable path…">
+    <button class="btn" onclick="loadBamDam()">Filter</button>
+  </div>
+  <div id="d-bam-stats" class="kpi-row" style="margin-bottom:12px"></div>
+  <div id="d-bam-dam"><div class="loading">Loading…</div></div>
+</div>
+
+<div id="v-reg-mru" class="view">
+  <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+    <button class="qbtn active" id="mru-tab-urls" onclick="mruTab('urls',this)">Typed URLs</button>
+    <button class="qbtn" id="mru-tab-run" onclick="mruTab('run',this)">Run MRU</button>
+    <button class="qbtn" id="mru-tab-rdp" onclick="mruTab('rdp',this)">RDP History</button>
+    <button class="qbtn" id="mru-tab-mui" onclick="mruTab('mui',this)">MUI Cache</button>
+    <button class="qbtn" id="mru-tab-opensave" onclick="mruTab('opensave',this)">Open/Save</button>
+  </div>
+  <div id="d-mru-urls"></div>
+  <div id="d-mru-run" style="display:none"></div>
+  <div id="d-mru-rdp" style="display:none"></div>
+  <div id="d-mru-mui" style="display:none"></div>
+  <div id="d-mru-opensave" style="display:none"></div>
+</div>
+
+<div id="v-bits" class="view">
+  <div class="filter-row">
+    <input class="fi fi-grow" id="bits-q" placeholder="Search job name, URL, local path…">
+    <button class="btn" onclick="loadBits()">Search</button>
+  </div>
+  <div id="d-bits"><div class="loading">Loading…</div></div>
+</div>
+
+<div id="v-usb" class="view">
+  <div class="filter-row">
+    <input class="fi fi-grow" id="usb-q" placeholder="Search device name, serial number, drive letter…">
+    <button class="btn" onclick="loadUsb()">Search</button>
+  </div>
+  <div id="d-usb-stats" class="kpi-row" style="margin-bottom:12px"></div>
+  <div id="d-usb"><div class="loading">Loading…</div></div>
+</div>
+
+<div id="v-net-adapters" class="view">
+  <div class="filter-row">
+    <span style="color:var(--muted);font-size:12px">Network adapters extracted from registry (TCPIP\Parameters\Interfaces)</span>
+  </div>
+  <div id="d-net-adapters"><div class="loading">Loading…</div></div>
+</div>
+
+<div id="v-software" class="view">
+  <div class="filter-row">
+    <input class="fi fi-grow" id="sw-q" placeholder="Search software name or publisher…">
+    <button class="btn" onclick="loadSoftware()">Search</button>
+  </div>
+  <div id="d-sw-stats" class="kpi-row" style="margin-bottom:12px"></div>
+  <div id="d-software"><div class="loading">Loading…</div></div>
+</div>
+
+<div id="v-ntds" class="view">
+  <div class="filter-row">
+    <input class="fi fi-grow" id="ntds-q" placeholder="Search account name, SID, display name…">
+    <button class="qbtn" id="ntds-btn-disabled" onclick="ntdsDisabledOnly=!ntdsDisabledOnly;this.classList.toggle('active',ntdsDisabledOnly);loadNtds()" title="Disabled only">Disabled</button>
+    <button class="qbtn" id="ntds-btn-computer" onclick="ntdsComputerOnly=!ntdsComputerOnly;this.classList.toggle('active',ntdsComputerOnly);loadNtds()" title="Computer accounts only">Computers</button>
+    <button class="btn" onclick="loadNtds()">Search</button>
+  </div>
+  <div id="d-ntds-stats" class="kpi-row" style="margin-bottom:12px"></div>
+  <div id="d-ntds"><div class="loading">Loading…</div></div>
+</div>
+
 </div>
 </main>
 
 <script>
 // ── constants ─────────────────────────────────────────────────────────────────
 const EVENT_DESC = {
-  1102:'Security Log Cleared', 4103:'PS Module Log', 4104:'PS Script Block',
-  4624:'Logon Success', 4625:'Logon Failure', 4627:'Group Membership',
-  4634:'Logoff', 4647:'User Initiated Logoff', 4648:'Explicit Creds Logon',
-  4662:'Object Access', 4663:'Object Access', 4672:'Special Privs',
-  4688:'Process Creation', 4689:'Process Exit', 4697:'Service Install',
-  4698:'Task Created', 4699:'Task Deleted', 4719:'Audit Policy Change',
-  4720:'Account Created', 4725:'Account Disabled', 4732:'Group Member Add',
-  4733:'Group Member Remove', 4740:'Account Locked', 4756:'Group Member Add',
-  4656:'Object Handle Requested', 4662:'Object Operation',
-  4663:'Object Access', 4672:'Special Privileges Assigned',
+  // System / Audit
+  1100:'Event Log Service Stopped', 1101:'Audit Events Dropped', 1102:'Security Log Cleared',
+  // PowerShell
+  4103:'PS Module Log', 4104:'PS Script Block', 4105:'PS Script Start', 4106:'PS Script Stop',
+  // Logon / Logoff
+  4624:'Successful Logon', 4625:'Failed Logon', 4627:'Group Membership',
+  4634:'Logoff', 4647:'User Initiated Logoff', 4648:'Explicit Credential Logon',
+  4649:'Replay Attack Detected', 4675:'SIDs Filtered',
+  // Privileges
+  4672:'Special Privileges Assigned', 4673:'Privileged Service Called',
+  4674:'Privileged Object Operation',
+  // Object Access
+  4656:'Object Handle Requested', 4657:'Registry Value Modified',
+  4658:'Handle Closed', 4660:'Object Deleted',
+  4662:'Object Operation', 4663:'Object Access Attempt',
+  4670:'Permissions Changed', 4907:'Auditing Settings Changed',
+  // Process
   4688:'Process Created', 4689:'Process Exited',
-  4697:'Service Installed', 4698:'Task Created', 4699:'Task Deleted',
-  4700:'Task Enabled', 4701:'Task Disabled', 4702:'Task Updated',
-  4720:'User Account Created', 4722:'Account Enabled',
+  // Policy
+  4698:'Scheduled Task Created', 4699:'Scheduled Task Deleted',
+  4700:'Scheduled Task Enabled', 4701:'Scheduled Task Disabled',
+  4702:'Scheduled Task Updated', 4719:'Audit Policy Changed',
+  // Account Management
+  4720:'User Account Created', 4722:'User Account Enabled',
   4723:'Password Change Attempt', 4724:'Password Reset',
-  4725:'Account Disabled', 4728:'Added to Global Group',
-  4732:'Added to Local Group', 4740:'Account Locked Out',
-  4756:'Added to Universal Group', 4768:'Kerberos TGT',
-  4769:'Kerberos Service Ticket', 4771:'Kerberos Pre-Auth Failed',
-  4776:'NTLM Auth', 4798:'User Enum', 4799:'Group Enum',
-  7034:'Service Crashed', 7035:'Service Control',
-  7036:'Service State Changed', 7040:'Service Start Type Changed',
-  7045:'New Service Installed',
+  4725:'User Account Disabled', 4726:'User Account Deleted',
+  4728:'Added to Global Security Group', 4729:'Removed from Global Group',
+  4732:'Added to Local Security Group', 4733:'Removed from Local Group',
+  4738:'User Account Changed', 4740:'Account Locked Out',
+  4756:'Added to Universal Group', 4757:'Removed from Universal Group',
+  4767:'Account Unlocked', 4781:'Account Name Changed',
+  4798:'User Group Membership Enumerated', 4799:'Group Membership Enumerated',
+  // Service
+  4697:'Service Installed', 7034:'Service Crashed',
+  7035:'Service Control Sent', 7036:'Service State Changed',
+  7040:'Service Start Type Changed', 7045:'New Service Installed',
+  // Kerberos
+  4768:'Kerberos TGT Request', 4769:'Kerberos Service Ticket',
+  4770:'Kerberos Ticket Renewed', 4771:'Kerberos Pre-Auth Failed',
+  4776:'NTLM Authentication', 4777:'NTLM Auth Failed',
 };
 
 const LOGON_TYPE = {
   2:'Interactive', 3:'Network', 4:'Batch', 5:'Service',
   7:'Unlock', 8:'NetworkCleartext', 9:'NewCredentials',
   10:'RemoteInteractive (RDP)', 11:'CachedInteractive',
+  12:'CachedRemoteInteractive', 13:'CachedUnlock',
 };
+
+// Well-known Windows SIDs → friendly name
+const _SID_DESC = {
+  'S-1-0-0':'Null Authority', 'S-1-1-0':'Everyone', 'S-1-2-0':'Local',
+  'S-1-3-0':'Creator Owner', 'S-1-3-1':'Creator Group',
+  'S-1-5-1':'Dialup', 'S-1-5-2':'Network', 'S-1-5-3':'Batch',
+  'S-1-5-4':'Interactive', 'S-1-5-6':'Service', 'S-1-5-7':'Anonymous',
+  'S-1-5-9':'Enterprise DCs', 'S-1-5-10':'Self',
+  'S-1-5-11':'Authenticated Users', 'S-1-5-12':'Restricted Code',
+  'S-1-5-13':'Terminal Server Users', 'S-1-5-14':'Remote Interactive Logon',
+  'S-1-5-17':'IUSR', 'S-1-5-18':'SYSTEM', 'S-1-5-19':'LOCAL SERVICE',
+  'S-1-5-20':'NETWORK SERVICE',
+  'S-1-5-32-544':'Administrators', 'S-1-5-32-545':'Users',
+  'S-1-5-32-546':'Guests', 'S-1-5-32-547':'Power Users',
+  'S-1-5-32-548':'Account Operators', 'S-1-5-32-549':'Server Operators',
+  'S-1-5-32-550':'Print Operators', 'S-1-5-32-551':'Backup Operators',
+  'S-1-5-32-554':'Pre-Win2000 Compat', 'S-1-5-32-555':'Remote Desktop Users',
+  'S-1-5-32-556':'Network Config Operators', 'S-1-5-32-580':'Remote Management Users',
+  'S-1-16-4096':'Low Integrity', 'S-1-16-8192':'Medium Integrity',
+  'S-1-16-12288':'High Integrity', 'S-1-16-16384':'System Integrity',
+};
+function _sidDesc(sid) {
+  if (!sid) return '';
+  return _SID_DESC[String(sid)] || '';
+}
+
+// Common TCP/UDP port → service name
+const _PORT_SVC = {
+  21:'FTP', 22:'SSH', 23:'Telnet', 25:'SMTP', 53:'DNS', 67:'DHCP',
+  80:'HTTP', 88:'Kerberos', 110:'POP3', 135:'RPC', 137:'NetBIOS-NS',
+  138:'NetBIOS-DG', 139:'NetBIOS', 143:'IMAP', 389:'LDAP',
+  443:'HTTPS', 445:'SMB', 464:'Kpasswd', 465:'SMTPS', 514:'Syslog',
+  587:'SMTP-Sub', 593:'RPC-HTTP', 636:'LDAPS', 993:'IMAPS', 995:'POP3S',
+  1433:'MSSQL', 1723:'PPTP', 3268:'LDAP-GC', 3269:'LDAPS-GC',
+  3389:'RDP', 4444:'Metasploit', 5985:'WinRM', 5986:'WinRM-S',
+  8080:'HTTP-Alt', 8443:'HTTPS-Alt', 9200:'Elasticsearch',
+  47001:'WinRM-Alt',
+};
+function _portSvc(port) {
+  const n = parseInt(port);
+  return (n && _PORT_SVC[n]) ? _PORT_SVC[n] : '';
+}
+const _DNS_RCODE = {
+  '0':'Success','1':'Format Error','2':'Server Failure','3':'NXDOMAIN',
+  '4':'Not Implemented','5':'Refused','8':'Non-existent RR',
+  '9234':'No Records','9003':'NXDOMAIN','9501':'No Records',
+  '9502':'Name error','9503':'Refused','9506':'Not authoritative',
+  '9460':'Connection timeout','9701':'No DNS servers',
+};
+function _dnsRcode(status) {
+  if (!status && status !== 0) return '';
+  const s = String(status);
+  if (s === '0' || s === '') return '<span class="badge b-low" style="font-size:10px">OK</span>';
+  const desc = _DNS_RCODE[s] || ('Code '+s);
+  return `<span class="badge b-high" style="font-size:10px">${esc(desc)}</span>`;
+}
+function _dnsResultsHtml(raw) {
+  if (!raw) return '<span style="color:var(--muted2)">—</span>';
+  // Format: type:1;1.2.3.4;type:28;::1; — extract IPs/hostnames
+  const parts = raw.split(';').map(s=>s.trim()).filter(Boolean);
+  const out = [];
+  for (const p of parts) {
+    if (p.startsWith('type:')) continue; // skip type markers
+    const isIp = /^[\d.]+$/.test(p) || /^[0-9a-f:]+$/i.test(p);
+    if (isIp || p.includes('.')) {
+      out.push(`<span class="mono" style="font-size:11px;color:var(--accent2);cursor:pointer" onclick="pivotSearch('${esc(p)}')" title="Pivot on ${esc(p)}">${esc(p)}</span>`);
+    } else {
+      out.push(`<span class="mono" style="font-size:11px;color:var(--muted)">${esc(p)}</span>`);
+    }
+  }
+  return out.length ? out.join(' <span style="color:var(--border-strong)">·</span> ') : `<span class="mono" style="font-size:11px;color:var(--muted)">${esc(raw.slice(0,120))}</span>`;
+}
 
 const TACTIC_MAP = {
   'T1059':'Execution','T1204':'Execution','T1047':'Execution','T1053':'Execution',
@@ -1731,6 +1960,12 @@ async function loadDashboard() {
     setNavBadge('defender',   counts.defender_events|| 0, true);
     setNavBadge('network',    d.hints?.ext_connections||0, true);
     setNavBadge('auth',       d.hints?.auth_failures||0,  true);
+    // Mail badge
+    const mailBadgeEl = document.getElementById('nb-mail');
+    if (mailBadgeEl && counts.emails > 0) {
+      mailBadgeEl.textContent = counts.emails > 99 ? '99+' : String(counts.emails);
+      mailBadgeEl.style.display = '';
+    }
     // Aggregate badge on the unified Events sidebar item: failed-logons + defender hits.
     const evtBadge = (d.hints?.auth_failures||0) + (counts.defender_events||0);
     const evtBadgeEl = document.getElementById('nb-evt');
@@ -2112,7 +2347,12 @@ async function loadEvents() {
       }},
       {k:'channel',h:'Channel',r:(v)=>{const c=(v||'').split('/').pop().split('\\').pop();return `<span class="badge b-info" style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${esc(v)}">${esc(c)}</span>`}},
       {k:'computer',h:'Computer',m:true},
-      {k:'user_sid',h:'User/SID',m:true},
+      {k:'user_sid',h:'User/SID',r:(v)=>{
+        if(!v||v==='-') return '<span style="color:var(--muted2)">—</span>';
+        const desc = _sidDesc(v);
+        const short = v.length>30 ? v.slice(0,14)+'…'+v.slice(-6) : v;
+        return `<span class="mono" style="font-size:11px;cursor:pointer" title="${esc(v)}" onclick="pivotSearch('${esc(v)}')">${esc(short)}</span>${desc?`<br><span style="color:var(--muted);font-size:10px">${esc(desc)}</span>`:''}`;
+      }},
       {k:'message',h:'Summary',r:(v,row)=>{
         const parsed = parseMsg(row.event_id,v);
         const rawHl = q && v ? `<br><span style="color:var(--muted);font-size:11px;font-family:monospace;max-width:380px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${hlTerm(String(v).slice(0,200),q)}</span>` : '';
@@ -2244,10 +2484,16 @@ function tlDetail(r) {
     return `<span style="color:var(--muted);font-size:11px">${esc(dir)}/</span><span class="accent" style="cursor:pointer" onclick="pivotSearch('${esc(name)}')">${esc(name)}</span>`;
   }
   if (src === 'detect') {
-    const name = det.replace(/^detect:/,'');
+    // detail: "sigma:xxxx\x01Rule Title — Description" (chr(1) separator)
+    const parts = det.split('');
+    const ruleSrc = parts[0] || det;
+    const ruleNotes = parts[1] || '';
+    const notesSep = ruleNotes.indexOf(' — ');
+    const ruleTitle = notesSep >= 0 ? ruleNotes.slice(0, notesSep) : ruleNotes;
+    const displayName = ruleTitle || ruleSrc;
     const sev = cat||'';
     const col = sev==='HIGH'?'var(--high)':sev==='MED'?'var(--med)':'var(--muted)';
-    return `${badge(sev)} <span style="color:${col};cursor:pointer;font-size:12px" onclick="goToDetection('${esc(name)}')" title="Go to detection">${esc(name)}</span>`;
+    return `${badge(sev)} <span style="color:${col};cursor:pointer;font-size:12px" onclick="goToDetection('${esc(ruleSrc)}')" title="${esc(ruleSrc)}">${esc(displayName.slice(0,90))}${displayName.length>90?'…':''}</span>`;
   }
   if (src === 'defender') {
     return `<span style="color:var(--high);font-weight:500;cursor:pointer" onclick="pivotSearch('${esc(det)}')" title="Search for this threat">${esc(det.slice(0,100))}</span>`;
@@ -2278,6 +2524,12 @@ function renderTimeline() {
     const {names} = window._tlTacticFilter;
     indexed = indexed.filter(({r}) => r.source !== 'detect' || names.has(r.detail));
   }
+  // Filter out entries with corrupt future timestamps (e.g. amcache ghost artefacts).
+  const nowYear = new Date().getFullYear();
+  indexed = indexed.filter(({r}) => {
+    const y = parseInt(String(r.ts||'').slice(0,4));
+    return !y || y <= nowYear;
+  });
   const fromVal = $('tl-from') ? $('tl-from').value : '';
   const toVal   = $('tl-to')   ? $('tl-to').value   : '';
   if (fromVal) indexed = indexed.filter(({r}) => r.ts && String(r.ts).slice(0,16) >= fromVal);
@@ -2304,7 +2556,7 @@ function renderTimeline() {
     const rowJson = encodeURIComponent(JSON.stringify(r));
     const jumpBtn = tlQ
       ? `<button class="ctx-btn" style="margin-left:auto;flex-shrink:0;font-size:10px;padding:2px 8px;opacity:.75" onclick="event.stopPropagation();jumpToTlRow(${idx})" title="Clear search and scroll to this event in full timeline">↵ context</button>`
-      : `<span style="margin-left:auto;color:var(--muted2);font-size:10px;letter-spacing:.5px">▾</span>`;
+      : `<span class="tl-chevron" style="margin-left:auto;color:var(--muted2);font-size:10px;letter-spacing:.5px;transition:transform .15s">▾</span>`;
     html += `<div class="tl-row src-${src}" style="cursor:pointer" onclick="tlExpand(this)" data-tlidx="${idx}" data-row="${rowJson}">
       <span class="tl-ts">${ts(r.ts)}</span>
       <span class="tl-src">${srcBadge(r.source)}</span>
@@ -2340,46 +2592,497 @@ function jumpToTlRow(idx) {
   });
 }
 
-// Inline-expand a timeline row: toggles a detail card below with full parsed
-// event payload. Click again to collapse.
-function tlExpand(rowEl) {
-  // Toggle existing
-  const next = rowEl.nextElementSibling;
-  if (next && next.classList && next.classList.contains('tl-expand')) {
+// ── Timeline expand: beautiful source-specific cards ─────────────────────────
+
+function _tlMkExpand(rowEl, c) {
+  const div = document.createElement('div');
+  div.className = 'tl-expand';
+  div.style.cssText = 'margin:2px 0 10px 18px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid '+c+';border-radius:8px;overflow:hidden;font-size:12px;animation:fadeIn .15s var(--ease)';
+  rowEl.insertAdjacentElement('afterend', div);
+  return div;
+}
+
+function _tlHdr(r, c, tsFull, meta) {
+  const ctxBtn = r.ts
+    ? `<button class="ctx-btn" onclick="event.stopPropagation();showEventContext(${JSON.stringify(r.ts)},${JSON.stringify(String(r.detail||'').slice(0,40))})" title="Show events ±5 min">⊙ ±5m</button>`
+    : '';
+  const chainV = String(r.extra||r.detail||'').slice(0,200);
+  const chainBtn = `<button class="ctx-btn" onclick="event.stopPropagation();showPivot(this.dataset.v)" data-v="${esc(chainV)}" title="Action chain">⌇ Chain</button>`;
+  return `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);background:${c}0d">
+    <span style="background:${c}22;color:${c};border:1px solid ${c}44;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700">${srcIcon(r.source||'')} ${esc(srcLabel(r.source||''))}</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--fg);font-feature-settings:'tnum'">⏱ ${tsFull}</span>
+    ${meta||''}
+    <div style="margin-left:auto;display:flex;gap:5px">${ctxBtn}${chainBtn}</div>
+  </div>`;
+}
+
+function _tlKV(k, v) {
+  if (v === null || v === undefined || v === '') return '';
+  return `<div style="color:var(--muted2);font-size:10px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.6px;padding-top:2px;white-space:nowrap">${esc(k)}</div>
+          <div style="color:var(--text);font-size:12px;word-break:break-all;line-height:1.5">${v}</div>`;
+}
+
+function _tlGrid(pairs) {
+  const inner = pairs.filter(Boolean).join('');
+  if (!inner) return '';
+  return `<div style="display:grid;grid-template-columns:max-content 1fr;gap:5px 16px;padding:14px 16px">${inner}</div>`;
+}
+
+function _tlSection(title, content) {
+  return `<div style="padding:10px 16px;border-top:1px solid var(--border)">
+    <div style="font-size:10px;text-transform:uppercase;color:var(--muted2);letter-spacing:.6px;font-weight:700;margin-bottom:8px">${esc(title)}</div>
+    ${content}
+  </div>`;
+}
+
+function _tlPivot(v, opts) {
+  if (!v) return '';
+  const s = String(v);
+  const max = (opts&&opts.max)||120;
+  const mono = opts&&opts.mono ? "font-family:'JetBrains Mono',monospace;font-size:11px;" : '';
+  const display = s.length>max ? esc(s.slice(0,max))+'<span style="color:var(--muted)">…</span>' : esc(s);
+  return `<span style="${mono}color:var(--accent);cursor:pointer;font-weight:500" onclick="pivotSearch(${JSON.stringify(s)})" title="${esc(s)}">${display}</span>`;
+}
+
+function _tlIP(ip) {
+  if (!ip||ip==='0.0.0.0'||ip==='-'||ip==='*'||ip==='') return '';
+  const ext = !isRFC1918(ip)&&ip!=='127.0.0.1';
+  const col = ext?'var(--med)':'var(--accent)';
+  const info = ext?` <a href="https://ipinfo.io/${esc(ip)}" target="_blank" rel="noopener" style="color:var(--muted);font-size:10px;text-decoration:none;opacity:.7" title="IP Info">ℹ</a>`:'';
+  return `<span style="font-family:'JetBrains Mono',monospace;color:${col};cursor:pointer" onclick="pivotSearch('${esc(ip)}')">${esc(ip)}</span>${info}`;
+}
+
+function _tlLogonDesc(eid) {
+  return {'4624':'Successful logon','4625':'Failed logon','4634':'Logoff','4647':'User-initiated logoff',
+    '4648':'Logon with explicit credentials (RunAs)','4672':'Special privileges logon',
+    '4768':'Kerberos TGT requested','4769':'Kerberos service ticket','4771':'Kerberos pre-auth failed',
+    '4776':'NTLM credential validation'}[String(eid)]||'';
+}
+
+// EVTX — lazily fetches full event message via /api/event-lookup
+function _tlExpandEvtx(div, r, c, tsFull) {
+  const eid  = r.category||'';
+  const desc = EVENT_DESC[parseInt(eid)]||'';
+  div.innerHTML = _tlHdr(r, c, tsFull,
+    `<span style="font-size:11px;color:var(--muted)">eid <b style="color:var(--accent2)">${esc(eid)}</b>${desc?' · <span>'+esc(desc)+'</span>':''}</span>`) +
+    `<div class="tl-evtx-body" style="padding:14px 16px"><div class="loading" style="padding:4px 0">Loading event data…</div></div>`;
+  const bodyEl = div.querySelector('.tl-evtx-body');
+  const params = new URLSearchParams({ts: r.ts||''});
+  if (eid) params.set('eid', eid);
+  fetch('/api/event-lookup?'+params)
+    .then(res=>res.json())
+    .then(evt=>{
+      if (!bodyEl||!bodyEl.isConnected) return;
+      const msg   = evt.message||'';
+      const chan   = evt.channel||r.detail||'';
+      const comp   = evt.computer||r.extra||'';
+      const evtId  = evt.event_id!=null ? String(evt.event_id) : eid;
+      const evDesc = EVENT_DESC[parseInt(evtId)]||desc||'';
+      const grid = _tlGrid([
+        _tlKV('Event ID', evtId ? `<b style="color:var(--accent2)">${esc(evtId)}</b>${evDesc?' <span style="color:var(--muted);font-size:11px">— '+esc(evDesc)+'</span>':''}` : ''),
+        _tlKV('Channel',  chan  ? _tlPivot(chan) : ''),
+        _tlKV('Computer', comp  ? `<span style="color:var(--muted)">${esc(comp)}</span>` : ''),
+      ]);
+      const fields = msg ? _tlSection('Event Fields', `<div class="evt-card">${_formatEventField(msg)}</div>`) : '';
+      bodyEl.outerHTML = (grid||'') + fields || `<div style="padding:14px 16px;color:var(--muted)">No event data found.</div>`;
+    })
+    .catch(e=>{ if (bodyEl&&bodyEl.isConnected) bodyEl.innerHTML=`<div style="color:var(--muted)">Error: ${esc(e.message)}</div>`; });
+}
+
+// Auth — logon/logoff events with user, IP, event description
+function _tlExpandAuth(div, r, c, tsFull) {
+  const eid  = r.category||'';
+  const user = r.detail||'';
+  const ip   = r.extra||'';
+  const desc = _tlLogonDesc(eid)||EVENT_DESC[parseInt(eid)]||'';
+  const isFail = eid==='4625'||eid==='4771'||eid==='4776';
+  const statusBadge = (eid==='4624'||eid==='4648')
+    ? `<span class="badge b-low" style="font-size:10px">✓ Success</span>`
+    : isFail ? `<span class="badge b-high" style="font-size:10px">✗ Failed</span>` : '';
+  div.innerHTML = _tlHdr(r, c, tsFull,
+    statusBadge+(desc?`<span style="font-size:11px;color:var(--muted)">${esc(eid)} — ${esc(desc)}</span>`:'')) +
+    _tlGrid([
+      _tlKV('User',      user ? `<span style="color:${isFail?'var(--high)':'var(--accent)'};font-weight:600;cursor:pointer" onclick="pivotSearch('${esc(user)}')">${esc(user)}</span>` : ''),
+      _tlKV('Source IP', _tlIP(ip)),
+      _tlKV('Event',     desc ? `<span style="color:var(--muted);font-size:11px">${esc(desc)}</span>` : (eid?`<span style="color:var(--muted)">${esc(eid)}</span>`:'')),
+    ]);
+}
+
+// Defender — threat name, severity, path
+function _tlExpandDefender(div, r, c, tsFull) {
+  const sev    = r.category||'';
+  const threat = r.detail||'';
+  const path   = r.extra||'';
+  const fname  = path ? path.replace(/\\/g,'/').split('/').pop()||path : '';
+  const sevCol = sev==='High'||sev==='Critical'?'var(--high)':sev==='Medium'?'var(--med)':'var(--muted)';
+  div.innerHTML = _tlHdr(r, c, tsFull, badge(sev)) +
+    _tlGrid([
+      _tlKV('Threat',   threat ? `<span style="color:var(--high);font-weight:600;cursor:pointer" onclick="pivotSearch('${esc(threat)}')" title="${esc(threat)}">${esc(threat.slice(0,100))}${threat.length>100?'…':''}</span>` : ''),
+      _tlKV('Severity', sev ? `<span style="color:${sevCol};font-weight:600">${esc(sev)}</span>` : ''),
+      _tlKV('File',     fname ? `<span style="font-family:'JetBrains Mono',monospace;cursor:pointer;color:var(--accent)" onclick="pivotSearch('${esc(fname)}')">${esc(fname)}</span>` : ''),
+    ]) +
+    (path ? _tlSection('Full Path', `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);word-break:break-all;cursor:pointer" onclick="pivotSearch('${esc(path)}')">${esc(path)}</span>`) : '');
+}
+
+// Toggle expanded JSON detail row under a hit entry
+window._dhObjs = [];
+function _dhToggle(el) {
+  const next = el.nextElementSibling;
+  if (next && next.classList.contains('dh-detail')) {
     next.remove();
-    rowEl.classList.remove('tl-row-open');
+    const chev = el.querySelector('.dh-chev');
+    if (chev) chev.style.transform = '';
     return;
   }
-  // Collapse any other open card so only one is visible at a time
-  document.querySelectorAll('#d-timeline .tl-expand').forEach(e=>e.remove());
-  document.querySelectorAll('#d-timeline .tl-row-open').forEach(r=>r.classList.remove('tl-row-open'));
+  const idx = parseInt(el.dataset.dhidx);
+  const entry = window._dhObjs[idx];
+  if (!entry || !entry.obj) return;
+  const d = document.createElement('div');
+  d.className = 'dh-detail';
+  d.style.cssText = 'background:var(--surface3);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;margin:-1px 0 4px 0;animation:fadeIn .12s';
+  d.innerHTML = _renderDetectObj(entry.obj, entry.truncated);
+  el.insertAdjacentElement('afterend', d);
+  const chev = el.querySelector('.dh-chev');
+  if (chev) chev.style.transform = 'rotate(180deg)';
+}
 
+// Windows Event ID descriptions for common security events
+const _EID_DESC = {
+  '1102':'Security Log Cleared','4624':'Successful Logon','4625':'Failed Logon',
+  '4634':'Account Logoff','4648':'Explicit Credential Logon','4657':'Registry Value Modified',
+  '4660':'Object Deleted','4662':'Object Operation','4663':'Object Access Attempt',
+  '4670':'Permissions Changed','4672':'Special Privileges Logon','4673':'Privileged Service Called',
+  '4688':'Process Created','4689':'Process Exited','4697':'Service Installed',
+  '4698':'Scheduled Task Created','4699':'Scheduled Task Deleted','4702':'Scheduled Task Updated',
+  '4719':'Audit Policy Changed','4720':'User Account Created','4722':'User Account Enabled',
+  '4723':'Password Change Attempt','4724':'Password Reset','4725':'User Account Disabled',
+  '4726':'User Account Deleted','4728':'Member Added to Security Group',
+  '4732':'Member Added to Local Group','4740':'Account Lockout',
+  '4756':'Member Added to Universal Group','4768':'Kerberos TGT Request',
+  '4769':'Kerberos Service Ticket','4771':'Kerberos Pre-auth Failed',
+  '4776':'Credential Validation','4798':'User Group Membership Enumerated',
+  '4799':'Local Group Membership Enumerated','4907':'Auditing Settings Changed',
+  '7045':'New Service Installed',
+};
+function _eidDesc(eid) { return eid ? (_EID_DESC[String(eid)]||'') : ''; }
+
+// Best-effort extraction of key-value pairs from truncated/invalid JSON
+function _tryPartialJSON(s) {
+  const o = {};
+  const re = /"([^"\\]+)"\s*:\s*(?:"((?:[^"\\]|\\.)*)"|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(true|false|null))/g;
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    o[m[1]] = m[2] !== undefined ? m[2] : m[3] !== undefined ? m[3] : m[4];
+  }
+  return Object.keys(o).length ? o : null;
+}
+
+// Parse "eventid: {json}" or "{json}" or plain string from detect IOC values
+function _parseDetectValue(v) {
+  if (!v) return {eid:'', obj:null};
+  const m = v.match(/^(\d+):\s*([\s\S]+)$/);
+  if (m) {
+    const rest = m[2].trim();
+    if (rest.startsWith('{')) {
+      try { return {eid:m[1], obj:JSON.parse(rest)}; } catch(_) {
+        const p = _tryPartialJSON(rest);
+        if (p) return {eid:m[1], obj:p, truncated:true};
+      }
+    }
+    return {eid:m[1], obj:null, raw:v};
+  }
+  const t = v.trim();
+  if (t.startsWith('{')) {
+    try { return {eid:'', obj:JSON.parse(t)}; } catch(_) {
+      const p = _tryPartialJSON(t);
+      if (p) return {eid:'', obj:p, truncated:true};
+    }
+  }
+  return {eid:'', obj:null, raw:v};
+}
+
+// Render parsed detect JSON — priority fields first, noise dimmed
+function _renderDetectObj(obj, truncated) {
+  if (!obj) return '';
+  const PRIO = [
+    'TargetUserName','TargetDomainName','SubjectUserName','SubjectDomainName',
+    'LogonType','IpAddress','WorkstationName','ProcessName','CommandLine',
+    'New Value','Old Value','Threat Name','Path','Action Name','Severity Name',
+    'Commandline','User','Signature','Category','ServiceName','TaskName',
+  ];
+  const SKIP = new Set([
+    'Product Name','Product Version','Schema Version',
+    'SubjectUserSid','SubjectLogonId','TargetLogonId','TargetLinkedLogonId',
+    'LogonGuid','TransmittedServices','KeyLength','RestrictedAdminMode',
+    'VirtualAccount','ElevatedToken','ImpersonationLevel',
+  ]);
+  const HIGHLIGHT = new Set(['TargetUserName','New Value','Threat Name','IpAddress']);
+  const entries = Object.entries(obj);
+  entries.sort(([a],[b]) => {
+    const ai=PRIO.indexOf(a), bi=PRIO.indexOf(b);
+    if (ai>=0&&bi>=0) return ai-bi;
+    if (ai>=0) return -1; if (bi>=0) return 1;
+    if (SKIP.has(a)&&!SKIP.has(b)) return 1;
+    if (!SKIP.has(a)&&SKIP.has(b)) return -1;
+    return 0;
+  });
+  const rows = entries.map(([k,val]) => {
+    const sv = String(val===null||val===undefined?'':val).trim();
+    if (!sv) return '';
+    const dim   = SKIP.has(k);
+    const color = HIGHLIGHT.has(k)?'var(--high)':k==='Old Value'?'var(--med)':dim?'var(--muted2)':'var(--text)';
+    return _tlKV(
+      k,
+      `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;word-break:break-all;color:${color}${dim?';opacity:.6':''}" title="${esc(sv)}">${esc(sv.slice(0,400))}${sv.length>400?'<span style="color:var(--muted)">…</span>':''}</span>`
+    );
+  }).filter(Boolean);
+  if (!rows.length) return '';
+  return _tlGrid(rows) + (truncated
+    ? `<div style="padding:0 16px 8px;font-size:10px;color:var(--muted2)">⚠ данные обрезаны в БД — перезапустите детекции для полного JSON</div>`
+    : '');
+}
+
+// Compact hit summary: eid pill + description + 2 priority key-value pairs inline
+function _detectHitSummary(parsed) {
+  const PRIO = ['TargetUserName','SubjectUserName','New Value','Old Value',
+                'Threat Name','Path','Action Name','Severity Name',
+                'LogonType','IpAddress','WorkstationName','ProcessName'];
+  const HIGHLIGHT = new Set(['TargetUserName','New Value','Threat Name','IpAddress']);
+  let html = '';
+  if (parsed.eid) {
+    const desc = _eidDesc(parsed.eid);
+    html += `<span style="font-family:'JetBrains Mono',monospace;color:var(--accent2);font-size:10px;background:rgba(121,192,255,.1);border-radius:3px;padding:1px 5px" title="${esc(desc)}">${esc(parsed.eid)}</span>`;
+    if (desc) html += `<span style="font-size:10px;color:var(--muted2);margin:0 5px 0 4px">${esc(desc)}</span>`;
+  }
+  if (parsed.obj) {
+    const fields = PRIO.map(k=>parsed.obj[k]!=null?[k,String(parsed.obj[k])]:null).filter(Boolean);
+    const show   = fields.length ? fields : Object.entries(parsed.obj).filter(([,v])=>v!=null&&String(v).trim()).slice(0,2).map(([k,v])=>[k,String(v)]);
+    html += show.slice(0,2).map(([k,v]) =>
+      `<span style="font-size:10px"><span style="color:var(--muted2)">${esc(k)}:</span> `+
+      `<span style="font-family:'JetBrains Mono',monospace;color:${HIGHLIGHT.has(k)?'var(--high)':k==='Old Value'?'var(--med)':'var(--text)'}">${esc(v.slice(0,80))}${v.length>80?'…':''}</span></span>`
+    ).join(`<span style="color:var(--border);margin:0 5px">│</span>`);
+    if (parsed.truncated) html += `<span style="font-size:9px;color:var(--muted2);margin-left:5px">[partial]</span>`;
+  } else {
+    const rv = parsed.raw||'';
+    html += rv ? `<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">${esc(rv.slice(0,120))}${rv.length>120?'…':''}</span>` : '<span style="color:var(--muted)">—</span>';
+  }
+  return html;
+}
+
+// Detect — rule name, parsed IOC fields, lazily loads recent hit list
+function _tlExpandDetect(div, r, c, tsFull) {
+  const conf     = r.category||'';
+  // detail: "sigma:xxxx\x01Rule Title — Description" (chr(1) separator from backend)
+  const detParts = (r.detail||'').split('');
+  const ruleSrc  = detParts[0]||'';
+  const ruleNotes= detParts[1]||'';
+  const value    = r.extra||'';
+  const sevCol   = conf==='HIGH'?'var(--high)':conf==='MED'?'var(--med)':'var(--muted)';
+  const parsed   = _parseDetectValue(value);
+
+  // Split notes into "Title — Description"
+  const notesSep  = ruleNotes.indexOf(' — ');
+  const ruleTitle = notesSep>=0 ? ruleNotes.slice(0,notesSep) : ruleNotes;
+  const ruleDescr = notesSep>=0 ? ruleNotes.slice(notesSep+3) : '';
+
+  // EID header badge with description
+  const eidDesc  = _eidDesc(parsed.eid);
+  const eidBadge = parsed.eid
+    ? ` <span style="font-size:11px;color:var(--muted)">eid <b style="color:var(--accent2)">${esc(parsed.eid)}</b>${eidDesc?` · <span style="color:var(--muted2)">${esc(eidDesc)}</span>`:''}</span>`
+    : '';
+
+  const ruleDisplay = ruleTitle || ruleSrc;
+  const ruleValueHTML =
+    `<span style="color:${sevCol};font-weight:600;cursor:pointer" onclick="goToDetection('${esc(ruleSrc)}')" title="${esc(ruleSrc)}">${esc(ruleDisplay)}</span>`+
+    (ruleDescr?`<div style="color:var(--muted);font-size:11px;margin-top:3px;font-style:italic;line-height:1.4">${esc(ruleDescr.slice(0,240))}${ruleDescr.length>240?'…':''}</div>`:'');
+
+  div.innerHTML = _tlHdr(r, c, tsFull, badge(conf)+eidBadge) +
+    _tlGrid([
+      _tlKV('Rule',       ruleValueHTML),
+      _tlKV('Confidence', `<span style="color:${sevCol};font-weight:600">${esc(conf)}</span>`),
+      (ruleTitle ? _tlKV('Source', `<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);cursor:pointer" onclick="goToDetection('${esc(ruleSrc)}')">${esc(ruleSrc)}</span>`) : ''),
+      (!parsed.obj && value) ? _tlKV('IOC Value', `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;word-break:break-all;cursor:pointer" onclick="pivotSearch(${JSON.stringify(value)})">${esc(value.slice(0,200))}${value.length>200?'…':''}</span>`) : '',
+    ].filter(Boolean)) +
+    (parsed.obj ? `<div style="padding:10px 16px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;text-transform:uppercase;color:var(--muted2);letter-spacing:.6px;font-weight:700;margin-bottom:8px">IOC Fields</div>
+      ${_renderDetectObj(parsed.obj, parsed.truncated)}
+    </div>` : '') +
+    `<div class="tl-det-hits" style="padding:0 16px 10px"><div class="loading" style="padding:4px 0;font-size:11px">Загрузка хитов…</div></div>`;
+
+  const hitsEl = div.querySelector('.tl-det-hits');
+  fetch('/api/detection-hits?source='+encodeURIComponent(ruleSrc))
+    .then(res=>res.json())
+    .then(hits=>{
+      if (!hitsEl||!hitsEl.isConnected) return;
+      if (!hits||!hits.length) { hitsEl.remove(); return; }
+      window._dhObjs = window._dhObjs||[];
+
+      const first     = hits[0]||{};
+      const technique = (first.related_campaign||'').trim();
+      const notesFB   = (first.notes||'').trim(); // fallback if no notes in detail
+
+      let h = `<div style="border-top:1px solid var(--border);padding-top:10px">`;
+
+      // MITRE technique row
+      if (technique && technique!=='N/A' && technique!=='') {
+        h += `<div style="margin-bottom:8px;display:flex;gap:8px;align-items:center">
+          <span style="font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">MITRE</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent2);background:rgba(121,192,255,.07);padding:2px 8px;border-radius:3px">${esc(technique)}</span>
+        </div>`;
+      }
+
+      // Fallback rule description from first hit notes (if detail didn't have it)
+      if (!ruleTitle && notesFB) {
+        const nb = notesFB.indexOf(' — ');
+        const nt = nb>=0 ? notesFB.slice(0,nb) : notesFB;
+        const nd = nb>=0 ? notesFB.slice(nb+3) : '';
+        h += `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(121,192,255,.05);border-radius:6px;border-left:3px solid ${sevCol}">
+          <div style="font-size:12px;font-weight:600;color:${sevCol}">${esc(nt)}</div>
+          ${nd?`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">${esc(nd.slice(0,200))}</div>`:''}
+        </div>`;
+      }
+
+      h += `<div style="font-size:10px;text-transform:uppercase;color:var(--muted2);letter-spacing:.6px;font-weight:700;margin-bottom:8px">Хиты (${hits.length} всего)</div>`;
+
+      for (const hit of hits.slice(0,8)) {
+        const hp = _parseDetectValue(hit.value||'');
+        hp.raw = hit.value||'';
+        const dhIdx = window._dhObjs.length;
+        window._dhObjs.push({obj: hp.obj||null, truncated: hp.truncated||false});
+        const hasDetail = !!hp.obj;
+        h += `<div class="dh-row" data-dhidx="${dhIdx}" onclick="${hasDetail?'_dhToggle(this)':''}"
+          style="display:flex;gap:10px;align-items:flex-start;padding:6px 4px;border-bottom:1px solid rgba(88,166,255,.06);border-radius:4px;${hasDetail?'cursor:pointer':''}transition:background .1s"
+          ${hasDetail?'onmouseenter="this.style.background=\'rgba(88,166,255,.05)\'" onmouseleave="this.style.background=\'\'"':''}>
+          <span style="font-size:10px;color:var(--muted);min-width:136px;flex-shrink:0;font-family:'JetBrains Mono',monospace;padding-top:2px">${ts(hit.first_seen)}</span>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-width:0;line-height:1.6;flex:1">${_detectHitSummary(hp)}</div>
+          ${hasDetail?`<span class="dh-chev" style="color:var(--muted2);font-size:10px;flex-shrink:0;padding-top:2px;transition:transform .15s">▾</span>`:''}
+        </div>`;
+      }
+      if (hits.length>8) h += `<div style="color:var(--muted);font-size:11px;padding-top:6px">+${hits.length-8} ещё — <span style="color:var(--accent);cursor:pointer" onclick="goToDetection('${esc(ruleSrc)}')">все в Alerts →</span></div>`;
+      h += '</div>';
+      hitsEl.innerHTML = h;
+    })
+    .catch(()=>{ if (hitsEl&&hitsEl.isConnected) hitsEl.remove(); });
+}
+
+// Prefetch — executable, run count, path
+function _tlExpandPrefetch(div, r, c, tsFull) {
+  const filename = r.category||'';
+  const detail   = r.detail||'';
+  const path     = r.extra||'';
+  const runs     = parseInt(detail)||0;
+  const runCol   = runs>20?'var(--high)':runs>5?'var(--med)':'var(--text)';
+  div.innerHTML = _tlHdr(r, c, tsFull, `<span style="color:var(--muted);font-size:11px">${esc(filename)}</span>`) +
+    _tlGrid([
+      _tlKV('Executable', filename ? `<span style="font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;cursor:pointer" onclick="pivotSearch('${esc(filename)}')">${esc(filename)}</span>` : ''),
+      _tlKV('Run Count',  runs ? `<b style="color:${runCol};font-size:14px">${runs}</b> <span style="color:var(--muted)">${runs===1?'execution':'executions'}</span>` : '0'),
+      _tlKV('Last Run',   `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${tsFull}</span>`),
+      _tlKV('Path',       path ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;word-break:break-all" onclick="pivotSearch('${esc(path)}')" title="${esc(path)}">${esc(path)}</span>` : ''),
+    ]);
+}
+
+// Amcache — file, path, SHA256 with VirusTotal link
+function _tlExpandAmcache(div, r, c, tsFull) {
+  const path   = r.detail||'';
+  const sha256 = r.extra||'';
+  const fname  = path ? path.replace(/\\/g,'/').split('/').pop()||path : '';
+  const dir    = path ? path.replace(/\\/g,'/').split('/').slice(0,-1).join('/') : '';
+  const vtHref = sha256 ? 'https://www.virustotal.com/gui/file/'+encodeURIComponent(sha256) : '';
+  div.innerHTML = _tlHdr(r, c, tsFull, '') +
+    _tlGrid([
+      _tlKV('File',       fname  ? `<span style="font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;cursor:pointer" onclick="pivotSearch('${esc(fname)}')">${esc(fname)}</span>` : ''),
+      _tlKV('Directory',  dir    ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${esc(dir)}</span>` : ''),
+      _tlKV('First Seen', `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${tsFull}</span>`),
+      _tlKV('SHA256',     sha256 ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;color:var(--muted)" onclick="pivotSearch('${esc(sha256)}')" title="${esc(sha256)}">${esc(sha256.slice(0,40))}…</span>${vtHref?` <a href="${esc(vtHref)}" target="_blank" rel="noopener" style="color:var(--muted);font-size:10px;text-decoration:none;margin-left:4px;opacity:.7" title="VirusTotal">VT↗</a>`:''}` : ''),
+    ]);
+}
+
+// MFT — suspicious file creation/modification
+function _tlExpandMft(div, r, c, tsFull) {
+  const path  = r.detail||'';
+  const size  = r.extra||'';
+  const fname = path ? path.replace(/\\/g,'/').split('/').pop()||path : '';
+  const dir   = path ? path.replace(/\\/g,'/').split('/').slice(0,-1).join('/') : '';
+  const sz    = parseInt(size)||0;
+  div.innerHTML = _tlHdr(r, c, tsFull, '') +
+    _tlGrid([
+      _tlKV('File',      fname ? `<span style="font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;cursor:pointer" onclick="pivotSearch('${esc(fname)}')">${esc(fname)}</span>` : ''),
+      _tlKV('Directory', dir   ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${esc(dir)}</span>` : ''),
+      _tlKV('Modified',  `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${tsFull}</span>`),
+      _tlKV('Size',      sz ? `<span style="color:var(--muted)">${sz.toLocaleString()} bytes</span>` : ''),
+    ]);
+}
+
+// Process creation (4688 / Sysmon) — exe, user, full cmdline
+function _tlExpandProc(div, r, c, tsFull) {
+  const image   = r.category||'';
+  const cmdline = r.detail||'';
+  const user    = r.extra||'';
+  const exe     = image ? image.replace(/\\/g,'/').split('/').pop()||image : '';
+  const susp    = /powershell|cmd\.exe|wscript|mshta|regsvr32|rundll32|certutil|bitsadmin|csc\.exe|msiexec|installutil/i.test(exe);
+  div.innerHTML = _tlHdr(r, c, tsFull, susp?`<span class="badge b-high" style="font-size:10px">⚠ Suspicious</span>`:'') +
+    _tlGrid([
+      _tlKV('Process',   exe   ? `<span style="font-family:'JetBrains Mono',monospace;color:${susp?'var(--high)':'var(--accent)'};font-weight:600;cursor:pointer" onclick="pivotSearch('${esc(exe)}')">${esc(exe)}</span>` : ''),
+      _tlKV('User',      user  ? `<span style="cursor:pointer;color:var(--accent)" onclick="pivotSearch('${esc(user)}')">${esc(user)}</span>` : ''),
+      _tlKV('Full Path', image ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);word-break:break-all">${esc(image)}</span>` : ''),
+    ]) +
+    (cmdline ? _tlSection('Command Line',
+      `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;word-break:break-all;line-height:1.6;cursor:pointer" onclick="pivotSearch(${JSON.stringify(cmdline.slice(0,200))})" title="${esc(cmdline)}">${esc(cmdline.slice(0,500))}${cmdline.length>500?'<span style="color:var(--muted)">…</span>':''}</span>`
+    ) : '');
+}
+
+// Sysmon network — process, destination IP:port, hostname
+function _tlExpandSysmonNet(div, r, c, tsFull) {
+  const image = r.category||'';
+  const dst   = r.detail||'';
+  const host  = r.extra||'';
+  const exe   = image ? image.replace(/\\/g,'/').split('/').pop()||image : '';
+  const parts = dst.split(':');
+  const dstIp = parts[0]||'';
+  const dstPort = parts.slice(1).join(':')||'';
+  div.innerHTML = _tlHdr(r, c, tsFull, '') +
+    _tlGrid([
+      _tlKV('Process',     exe    ? `<span style="font-family:'JetBrains Mono',monospace;color:var(--accent);cursor:pointer" onclick="pivotSearch('${esc(exe)}')">${esc(exe)}</span>` : ''),
+      _tlKV('Destination', dstIp  ? _tlIP(dstIp)+(dstPort&&dstPort!=='0'?`<span style="color:var(--muted)">:${esc(dstPort)}</span>`:'') : ''),
+      _tlKV('Hostname',    host   ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;color:var(--accent)" onclick="pivotSearch('${esc(host)}')">${esc(host)}</span>` : ''),
+    ]);
+}
+
+// Fallback for unknown sources
+function _tlExpandGeneric(div, r, c, tsFull) {
+  div.innerHTML = _tlHdr(r, c, tsFull, r.category?`<span style="font-size:11px;color:var(--muted)">${esc(r.category)}</span>`:'') +
+    _tlGrid([
+      _tlKV('Detail', r.detail ? _tlPivot(r.detail, {max:120}) : ''),
+      _tlKV('Extra',  r.extra  ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${esc(String(r.extra).slice(0,200))}</span>` : ''),
+    ]);
+}
+
+function tlExpand(rowEl) {
+  const next = rowEl.nextElementSibling;
+  if (next && next.classList && next.classList.contains('tl-expand')) {
+    next.remove(); rowEl.classList.remove('tl-row-open'); return;
+  }
+  document.querySelectorAll('#d-timeline .tl-expand').forEach(e=>e.remove());
+  document.querySelectorAll('#d-timeline .tl-row-open').forEach(el=>el.classList.remove('tl-row-open'));
   let r;
-  try { r = JSON.parse(decodeURIComponent(rowEl.dataset.row||'')); }
-  catch(_) { return; }
+  try { r = JSON.parse(decodeURIComponent(rowEl.dataset.row||'')); } catch(_) { return; }
   rowEl.classList.add('tl-row-open');
 
-  const c = srcColor(r.source) || '#58a6ff';
+  const src    = (r.source||'').toLowerCase();
+  const c      = srcColor(r.source) || '#58a6ff';
   const tsFull = r.ts ? esc(String(r.ts).slice(0,19).replace('T',' ')) : '—';
-  let html = '<div class="tl-expand" style="margin:2px 0 8px 18px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid '+c+';border-radius:6px;font-size:12px">';
-  html += '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">';
-  html += '<span style="background:'+c+'22;color:'+c+';border:1px solid '+c+'55;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700">'+srcIcon(r.source||'')+' '+esc(srcLabel(r.source||''))+'</span>';
-  html += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--text);font-feature-settings:\'tnum\'">⏱ '+tsFull+'</span>';
-  if (r.category) html += '<span style="font-size:11px;color:var(--muted)">cat <b style="color:var(--accent2)">'+esc(r.category)+'</b></span>';
-  html += '<button class="ctx-btn" style="margin-left:auto" onclick="event.stopPropagation();showPivot(this.dataset.v)" data-v="'+esc(String(r.detail||'').slice(0,200))+'">⌇ Chain</button>';
-  html += '</div>';
-  if (r.detail) {
-    html += '<div style="margin-bottom:10px"><div style="font-size:10px;text-transform:uppercase;color:var(--muted2);letter-spacing:.6px;font-weight:700;margin-bottom:5px">Detail</div>';
-    html += _formatEventField(r.detail);
-    html += '</div>';
-  }
-  if (r.extra) {
-    html += '<div style="margin-bottom:6px"><div style="font-size:10px;text-transform:uppercase;color:var(--muted2);letter-spacing:.6px;font-weight:700;margin-bottom:5px">Raw / extra</div>';
-    html += _formatEventField(r.extra);
-    html += '</div>';
-  }
-  html += '</div>';
-  rowEl.insertAdjacentHTML('afterend', html);
+  const div    = _tlMkExpand(rowEl, c);
+
+  if      (src==='evtx')                      _tlExpandEvtx(div, r, c, tsFull);
+  else if (src==='auth')                      _tlExpandAuth(div, r, c, tsFull);
+  else if (src==='defender')                  _tlExpandDefender(div, r, c, tsFull);
+  else if (src==='detect')                    _tlExpandDetect(div, r, c, tsFull);
+  else if (src==='prefetch')                  _tlExpandPrefetch(div, r, c, tsFull);
+  else if (src==='amcache')                   _tlExpandAmcache(div, r, c, tsFull);
+  else if (src==='mft')                       _tlExpandMft(div, r, c, tsFull);
+  else if (src==='proc_4688'||src==='sysmon') _tlExpandProc(div, r, c, tsFull);
+  else if (src==='sysmon_net')                _tlExpandSysmonNet(div, r, c, tsFull);
+  else                                        _tlExpandGeneric(div, r, c, tsFull);
 }
 
 function openTimelineAt(dateStr) {
@@ -3265,8 +3968,6 @@ $('n-q').addEventListener('input', ()=>renderNetwork());
 // ── Persistence ───────────────────────────────────────────────────────────────
 async function loadPersistence() {
   const el = $('d-persistence');
-  const banner = missingArtifactBanner('persistence');
-  if (banner) { el.innerHTML = banner; return; }
   try {
     const [regRows, iocRows] = await Promise.all([
       api('/api/persistence'),
@@ -3285,7 +3986,23 @@ async function loadPersistence() {
       ];
       const SUSP_PERSIST = /temp|appdata\\roaming|programdata|users\\public|downloads|\.exe.*".*"|powershell|cmd\.exe.*\/c|wscript|mshta|regsvr32|rundll32|certutil|bitsadmin/i;
       const persistRowCls = r => SUSP_PERSIST.test(r.command||r.name||'') ? 'ioc-row' : '';
-      html += `<div class="sec"><div class="sec-title">Registry / Services / Tasks (${regRows.length})</div>${tbl(regRows, cols, persistRowCls)}</div>`;
+      const suspCount = regRows.filter(r => persistRowCls(r) === 'ioc-row').length;
+      const suspBadge = suspCount ? `<span class="badge b-high" style="margin-left:8px;font-size:11px">${suspCount} suspicious</span>` : '';
+      const filterId = 'persist-susp-only';
+      html += `<div class="sec">
+        <div class="sec-title" style="display:flex;align-items:center;gap:10px">
+          Registry / Services / Tasks (${regRows.length})${suspBadge}
+          <label style="margin-left:auto;font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:400">
+            <input type="checkbox" id="${filterId}" onchange="
+              const only=this.checked;
+              document.querySelectorAll('#d-persistence tbody tr').forEach(r=>{
+                r.style.display=(only&&!r.classList.contains('ioc-row'))?'none':'';
+              })
+            "> Show suspicious only
+          </label>
+        </div>
+        ${tbl(regRows, cols, persistRowCls)}
+      </div>`;
     } else {
       html += `<div class="sec"><div class="empty" style="text-align:left;padding:12px 0">
         <strong>No persistence artifacts in registry/services/scheduled tasks.</strong>
@@ -3437,7 +4154,7 @@ async function loadHashes() {
 
   const cols = [
     {k:'hash',h:'Hash Value',r:(v,r)=>{
-      const h=v||''; const short=h.slice(0,18)+'…';
+      const h=v||''; const short=h.length>40?h.slice(0,40)+'…':h;
       const vtUrl = `https://www.virustotal.com/gui/file/${encodeURIComponent(h)}`;
       return `<span class="mono" style="color:var(--accent);cursor:pointer;font-size:11px" title="${esc(h)}" onclick="pivotSearch('${esc(h)}')">${esc(short)}</span>
         <a href="${vtUrl}" target="_blank" rel="noopener" style="margin-left:5px;color:var(--muted);font-size:10px;text-decoration:none;border:1px solid var(--border);border-radius:3px;padding:0 4px" title="Check on VirusTotal">VT↗</a>`;
@@ -3715,6 +4432,138 @@ async function loadBrowser() {
   }
 }
 
+// ── Mail / Email ──────────────────────────────────────────────────────────────
+let mailHasAtt = false;
+
+async function loadMail() {
+  const list = $('mail-list');
+  const kpis = $('mail-kpis');
+  if (!list) return;
+  list.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const q = ($('mail-q')||{value:''}).value.trim();
+    let url = '/api/emails?';
+    if (q) url += 'q='+encodeURIComponent(q)+'&';
+    if (mailHasAtt) url += 'has_att=1&';
+    const d = await api(url);
+    const rows = d.rows||[], stats = d.stats||{}, senders = d.top_senders||[];
+
+    if (kpis) kpis.innerHTML = `
+      <div class="kpi kpi-accent"><div class="v">${(stats.total||0).toLocaleString()}</div><div class="l">Emails</div></div>
+      <div class="kpi kpi-accent"><div class="v">${(stats.with_att||0).toLocaleString()}</div><div class="l">With Attachments</div></div>
+      <div class="kpi kpi-accent"><div class="v">${(stats.senders||0).toLocaleString()}</div><div class="l">Unique Senders</div></div>
+      <div class="kpi kpi-accent"><div class="v">${(stats.folders||0).toLocaleString()}</div><div class="l">Folders</div></div>`;
+
+    if (!rows.length) {
+      list.innerHTML = '<div class="empty">No emails found.<small>Parse .eml, .mbox, or .msg files to populate email data.</small></div>';
+      return;
+    }
+
+    const SUSP_DOM = /\.ru$|\.cn$|\.xyz$|\.top$|\.tk$|\.pw$|pastebin|bit\.ly|tinyurl/i;
+    list.innerHTML = rows.map(r => {
+      const fromSusp = SUSP_DOM.test(r.from_addr||'');
+      const dt = r.sent_at || r.received_at;
+      return `<div class="mail-card${fromSusp?' ioc-row':''}" onclick="loadMailDetail(${r.id})"
+        style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;cursor:pointer;transition:border-color .15s"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="min-width:0;flex:1">
+            <div style="font-weight:500;color:${fromSusp?'var(--high)':'var(--text)'};font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.from_addr||'')}">
+              ${fromSusp?'⚠ ':''}${esc(r.from_name||r.from_addr||'(unknown)')}
+              ${r.from_name&&r.from_addr?`<span style="color:var(--muted);font-weight:400;font-size:11px">&lt;${esc(r.from_addr)}&gt;</span>`:''}
+            </div>
+            <div style="color:var(--text);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.subject||'')}">
+              ${esc(r.subject||'(no subject)')}
+            </div>
+            ${r.to_addrs?`<div style="color:var(--muted);font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">To: ${esc(r.to_addrs)}</div>`:''}
+          </div>
+          <div style="flex-shrink:0;text-align:right">
+            <div style="color:var(--muted);font-size:11px;font-family:monospace">${dt?ts(dt):''}</div>
+            <div style="margin-top:4px;display:flex;gap:4px;justify-content:flex-end">
+              ${r.has_attachments?'<span class="badge b-warn" style="font-size:10px">📎</span>':''}
+              ${r.folder?`<span class="badge b-info" style="font-size:10px">${esc(r.folder)}</span>`:''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div class="empty">Error: ${esc(e.message)}</div>`;
+  }
+}
+
+async function loadMailDetail(id) {
+  const el = $('mail-detail');
+  if (!el) return;
+  el.style.display = 'block';
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const d = await api('/api/email-detail?id='+id);
+    const m = d.email||{}, atts = d.attachments||[], urls = d.urls||[];
+    const EXEC_EXT = /\.(exe|dll|bat|cmd|ps1|vbs|js|jar|scr|pif|com|hta|msi|lnk)$/i;
+    const SUSP_DOM = /\.ru$|\.cn$|\.xyz$|\.top$|\.tk$|\.pw$|pastebin|bit\.ly|tinyurl/i;
+
+    const frow = (label, val, color) => val
+      ? `<div style="display:flex;gap:6px;font-size:12px;margin-top:5px"><span style="color:var(--muted);min-width:76px;flex-shrink:0">${label}:</span><span style="color:${color||'var(--text)'};word-break:break-all">${esc(String(val))}</span></div>`
+      : '';
+
+    let html = `<div style="margin-bottom:16px">`;
+    html += `<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:10px;word-break:break-word">${esc(m.subject||'(no subject)')}</div>`;
+
+    const fromDisplay = m.from_name ? `${m.from_name} <${m.from_addr||''}>` : (m.from_addr||'');
+    const fromSusp = SUSP_DOM.test(m.from_addr||'');
+    html += frow('From', fromDisplay, fromSusp?'var(--high)':'var(--text)');
+    html += frow('To', m.to_addrs);
+    if (m.cc_addrs)  html += frow('CC', m.cc_addrs);
+    if (m.bcc_addrs) html += frow('BCC', m.bcc_addrs);
+    if (m.reply_to)  html += frow('Reply-To', m.reply_to, 'var(--med)');
+    html += frow('Sent', m.sent_at ? ts(m.sent_at) : '');
+    html += frow('Received', m.received_at ? ts(m.received_at) : '');
+    if (m.x_originating_ip) html += frow('Orig IP', m.x_originating_ip, 'var(--high)');
+    if (m.x_mailer)         html += frow('Mailer', m.x_mailer, 'var(--muted)');
+    if (m.message_id)       html += frow('Msg-ID', m.message_id, 'var(--muted)');
+    if (m.folder)           html += frow('Folder', m.folder);
+    if (m.source_file)      html += frow('Source', m.source_file, 'var(--muted)');
+    html += '</div>';
+
+    if (atts.length) {
+      html += `<div class="sec"><div class="sec-title">Attachments (${atts.length})</div>`;
+      html += atts.map(a => {
+        const isExec = EXEC_EXT.test(a.filename||'');
+        return `<div style="background:var(--bg);border:1px solid ${isExec?'var(--high)':'var(--border)'};border-radius:4px;padding:8px 10px;margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span style="color:${isExec?'var(--high)':'var(--text)'};font-weight:500;font-size:13px;word-break:break-all">${isExec?'⚠ ':''}${esc(a.filename||'')}</span>
+            <span style="color:var(--muted);font-size:11px;flex-shrink:0">${a.size_bytes!=null?((a.size_bytes/1024).toFixed(1)+' KB'):''}</span>
+          </div>
+          ${a.content_type?`<div style="color:var(--muted);font-size:11px;margin-top:3px">${esc(a.content_type)}</div>`:''}
+          ${a.sha256?`<div class="mono" style="color:var(--muted);font-size:10px;margin-top:4px;cursor:pointer;word-break:break-all" onclick="pivotSearch('${esc(a.sha256)}')" title="Click to pivot on hash">${esc(a.sha256)}</div>`:''}
+        </div>`;
+      }).join('');
+      html += '</div>';
+    }
+
+    if (urls.length) {
+      html += `<div class="sec"><div class="sec-title">URLs in Body (${urls.length})</div>`;
+      html += urls.map(u => {
+        const susp = SUSP_DOM.test(u.url||'');
+        return `<div style="margin-bottom:4px"><span style="color:${susp?'var(--high)':'var(--accent)'};font-size:12px;word-break:break-all;cursor:pointer" onclick="pivotSearch('${esc((u.url||'').slice(0,80))}')">${susp?'⚠ ':''}${esc(u.url||'')}</span></div>`;
+      }).join('');
+      html += '</div>';
+    }
+
+    const body = m.body_text||'';
+    if (body) {
+      html += `<div class="sec"><div class="sec-title">Body</div>`;
+      html += `<pre style="white-space:pre-wrap;word-break:break-word;color:var(--muted);font-size:12px;font-family:monospace;margin:0;max-height:500px;overflow-y:auto;background:var(--bg);padding:10px;border-radius:4px">${esc(body.slice(0,8000))}${body.length>8000?'\n…[truncated]':''}</pre>`;
+      html += '</div>';
+    }
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="empty">Error: ${esc(e.message)}</div>`;
+  }
+}
+
 // ── IOC Indicators ────────────────────────────────────────────────────────────
 function toggleIocImport() {
   const p = $('ioc-import-panel');
@@ -3941,7 +4790,8 @@ function vtLink(hash) {
 function hashCell(v) {
   if (!v) return '<span style="color:var(--muted2)">—</span>';
   const s = String(v);
-  return `<span class="hash-cell" data-h="${esc(s)}" title="${esc(s)}\nClick: pivot · Dbl-click: copy" onclick="pivotSearch(this.dataset.h)" ondblclick="copyFull(this,this.dataset.h)">${esc(s.slice(0,12))}</span>` + vtLink(s);
+  const short = s.length > 40 ? s.slice(0,40)+'…' : s;
+  return `<span class="hash-cell" data-h="${esc(s)}" title="${esc(s)}\nClick: pivot · Dbl-click: copy" onclick="pivotSearch(this.dataset.h)" ondblclick="copyFull(this,this.dataset.h)">${esc(short)}</span>` + vtLink(s);
 }
 
 function copyFull(el, text) {
@@ -4582,16 +5432,16 @@ async function loadSysmonProcess() {
       const parShort = (r.parent_image||'').replace(/^.*[\\\/]/,'');
       const il = (r.integrity_level||'').toLowerCase();
       const intStyle = (il==='high'||il==='system') ? ' style="color:var(--high);font-weight:600"' : '';
-      const sha = (r.sha256||'').slice(0,12);
+      const cmd = r.cmdline||'', pcmd = r.parent_cmdline||'';
       return `<tr>
         <td style="white-space:nowrap;color:var(--muted)">${ts(r.timestamp)}</td>
         <td style="text-align:right;color:var(--muted)">${r.pid||''}</td>
         <td style="text-align:right;color:var(--muted)">${r.ppid||''}</td>
         <td title="${esc(r.image||'')}" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent)">${esc(imgShort)}<button class="ctx-btn" style="margin-left:4px;font-size:10px;padding:1px 5px;vertical-align:middle" onclick="showProcDeep(${JSON.stringify(r.image||'')})" title="Deep-dive">🔍</button></td>
-        <td title="${esc(r.cmdline||'')}" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-family:monospace">${esc((r.cmdline||'').slice(0,120))}</td>
+        <td title="${esc(cmd)}" style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-family:monospace;cursor:pointer" onclick="event.stopPropagation();this.style.whiteSpace=this.style.whiteSpace==='normal'?'nowrap':'normal';this.style.maxWidth=this.style.whiteSpace==='normal'?'none':'320px'">${esc(cmd.slice(0,300))}${cmd.length>300?'<span style="color:var(--accent2)">…</span>':''}</td>
         <td title="${esc(r.parent_image||'')}" style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)">${esc(parShort)}</td>
-        <td title="${esc(r.parent_cmdline||'')}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-family:monospace;color:var(--muted)">${esc((r.parent_cmdline||'').slice(0,80))}</td>
-        <td style="font-family:monospace;font-size:11px;color:var(--muted)" title="${esc(r.sha256||'')}">${esc(sha)}${sha?'…':''}</td>
+        <td title="${esc(pcmd)}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-family:monospace;color:var(--muted);cursor:pointer" onclick="event.stopPropagation();this.style.whiteSpace=this.style.whiteSpace==='normal'?'nowrap':'normal';this.style.maxWidth=this.style.whiteSpace==='normal'?'none':'200px'">${esc(pcmd.slice(0,160))}${pcmd.length>160?'<span style="color:var(--muted2)">…</span>':''}</td>
+        <td style="font-size:11px">${hashCell(r.sha256)}</td>
         <td${intStyle}>${esc(r.integrity_level||'')}</td>
         <td>${esc(r.user_name||'')}</td>
       </tr>`;
@@ -4631,7 +5481,7 @@ async function loadSysmonNetwork() {
         <td style="font-family:monospace;font-size:12px">${esc(r.src_ip||'')}</td>
         <td style="text-align:right;color:var(--muted)">${r.src_port||''}</td>
         <td style="font-family:monospace;font-size:12px"${extStyle}>${esc(r.dst_ip||'')}</td>
-        <td style="text-align:right;color:var(--muted)">${r.dst_port||''}</td>
+        <td style="text-align:right;color:var(--muted);white-space:nowrap">${r.dst_port||''}${_portSvc(r.dst_port)?` <span class="badge b-info" style="font-size:10px">${esc(_portSvc(r.dst_port))}</span>`:''}</td>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)">${esc(r.dst_host||'')}</td>
         <td>${r.initiated?'→':'←'}</td>
         <td>${esc(r.user_name||'')}</td>
@@ -4667,8 +5517,8 @@ async function loadSysmonDns() {
         <td style="text-align:right;color:var(--muted)">${r.pid||''}</td>
         <td title="${esc(r.image||'')}" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent)">${esc(imgShort)}</td>
         <td style="font-family:monospace;font-size:12px${fail?';color:var(--high)':''}" title="${esc(r.query_name||'')}">${esc(r.query_name||'')}</td>
-        <td style="color:var(--muted)">${esc(r.query_status||'')}</td>
-        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-family:monospace;color:var(--muted)">${esc(r.query_results||'')}</td>
+        <td>${_dnsRcode(r.query_status)}</td>
+        <td style="max-width:280px">${_dnsResultsHtml(r.query_results||'')}</td>
         <td>${esc(r.user_name||'')}</td>
       </tr>`;
     }).join('');
@@ -4708,16 +5558,20 @@ async function loadSysmonImageLoad() {
       const imgShort = (r.image||'').replace(/^.*[\\\/]/,'');
       const dllShort = (r.image_loaded||'').replace(/^.*[\\\/]/,'');
       const signed = String(r.signed||'').toLowerCase();
-      const signStyle = (signed==='false'||signed==='0') ? ' style="color:var(--high);font-weight:600"' : '';
-      const sha = (r.sha256||'').slice(0,12);
+      const isUnsigned = signed==='false'||signed==='0';
+      const signBadge = isUnsigned
+        ? `<span class="badge b-high" style="font-size:10px">✗ Unsigned</span>`
+        : signed==='true'||signed==='1'
+          ? `<span class="badge b-low" style="font-size:10px">✓ Signed</span>`
+          : `<span style="color:var(--muted)">—</span>`;
       const suspDll = /temp|appdata|programdata|users\\public/i.test(r.image_loaded||'');
       return `<tr>
         <td style="white-space:nowrap;color:var(--muted)">${ts(r.timestamp)}</td>
         <td title="${esc(r.image||'')}" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent)">${esc(imgShort)}</td>
         <td title="${esc(r.image_loaded||'')}" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:11px${suspDll?';color:var(--med)':''}">${esc(dllShort)}</td>
-        <td${signStyle}>${esc(r.signed||'')}</td>
-        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11px">${esc(r.signature||'')}</td>
-        <td style="font-family:monospace;font-size:11px;color:var(--muted)" title="${esc(r.sha256||'')}">${esc(sha)}${sha?'…':''}</td>
+        <td>${signBadge}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11px" title="${esc(r.signature||'')}">${esc((r.signature||'').slice(0,40))}${(r.signature||'').length>40?'…':''}</td>
+        <td style="font-size:11px">${hashCell(r.sha256)}</td>
         <td>${esc(r.user_name||'')}</td>
       </tr>`;
     }).join('');
@@ -4786,6 +5640,479 @@ function addNoteForDetection(source, value) {
   switchTab('notes');
   if ($('note-ref')) $('note-ref').value = source || '';
   if ($('note-text')) { $('note-text').value = value ? `Re: ${value}` : ''; $('note-text').focus(); }
+}
+
+// ── AnyDesk ───────────────────────────────────────────────────────────────────
+let _adData = null;
+let _adCurTab = 'sessions';
+
+async function loadAnyDesk() {
+  const el = $('d-anydesk-sessions');
+  if (!el) return;
+  if (!_adData) {
+    el.innerHTML = '<div class="loading">Loading…</div>';
+    try { _adData = await api('/api/anydesk'); } catch(e) {
+      el.innerHTML = `<div class="empty">Error: ${esc(e.message)}</div>`; return;
+    }
+  }
+  // Stats KPIs
+  const s = _adData.stats || {};
+  $('d-anydesk-stats').innerHTML = `<div class="kpi-row">
+    <div class="kpi kpi-accent"><div class="v">${s.total_sessions||0}</div><div class="l">Total Sessions</div></div>
+    <div class="kpi kpi-high"><div class="v">${s.incoming||0}</div><div class="l">Incoming</div></div>
+    <div class="kpi kpi-med"><div class="v">${s.outgoing||0}</div><div class="l">Outgoing</div></div>
+    <div class="kpi"><div class="v">${s.unique_ids||0}</div><div class="l">Unique IDs</div></div>
+    ${s.first_seen?`<div class="kpi"><div class="v" style="font-size:11px">${ts(s.first_seen)}</div><div class="l">First Seen</div></div>`:''}
+    ${s.last_seen?`<div class="kpi"><div class="v" style="font-size:11px">${ts(s.last_seen)}</div><div class="l">Last Seen</div></div>`:''}
+  </div>`;
+  adTab(_adCurTab, $('ad-tab-'+_adCurTab));
+}
+
+function adTab(tab, btn) {
+  _adCurTab = tab;
+  document.querySelectorAll('#v-anydesk .qbtn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  ['sessions','events','config'].forEach(t=>{ const d=$('d-anydesk-'+t); if(d) d.style.display=t===tab?'':'none'; });
+  if (!_adData) return;
+  const el = $('d-anydesk-'+tab);
+  if (!el) return;
+  if (tab === 'sessions') {
+    const rows = _adData.sessions || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No AnyDesk sessions found.</div>'; return; }
+    const cols = [{k:'timestamp',h:'Time'},{k:'direction',h:'Direction'},{k:'client_alias',h:'Client Alias'},{k:'anydesk_id',h:'AnyDesk ID'},{k:'auth_method',h:'Auth'},{k:'source_file',h:'Source'}];
+    const head = cols.map(c=>`<th>${c.h}</th>`).join('');
+    const body = rows.map(r=>{
+      const dir = r.direction||'';
+      const badge = dir==='Incoming'?`<span class="badge b-high">${esc(dir)}</span>`:dir==='Outgoing'?`<span class="badge b-med">${esc(dir)}</span>`:`<span class="badge">${esc(dir)}</span>`;
+      return `<tr>
+        <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.timestamp)}</td>
+        <td>${badge}</td>
+        <td style="color:var(--accent)">${esc(r.client_alias||'')}</td>
+        <td style="font-family:monospace">${esc(r.anydesk_id||'')}</td>
+        <td>${esc(r.auth_method||'')}</td>
+        <td style="color:var(--muted);font-size:11px">${esc((r.source_file||'').split(/[\\/]/).pop())}</td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="anydesk-sess-tbl"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} sessions <button onclick="exportCsv('anydesk-sess-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+  } else if (tab === 'events') {
+    const rows = _adData.events || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No AnyDesk log events found.</div>'; return; }
+    const body = rows.map(r=>{
+      const lvl = (r.level||'').toLowerCase();
+      const lvlColor = lvl==='error'?'var(--high)':lvl==='warning'?'var(--med)':'var(--muted)';
+      return `<tr>
+        <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.timestamp)}</td>
+        <td style="color:${lvlColor}">${esc(r.level||'')}</td>
+        <td style="color:var(--muted)">${esc(r.component||'')}</td>
+        <td style="font-size:12px;word-break:break-word;max-width:600px">${esc(r.message||'')}</td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Time</th><th>Level</th><th>Component</th><th>Message</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} events</div>`;
+  } else if (tab === 'config') {
+    const rows = _adData.config || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No AnyDesk config found.</div>'; return; }
+    const body = rows.map(r=>`<tr><td style="color:var(--accent);font-family:monospace">${esc(r.key||'')}</td><td style="font-family:monospace;font-size:12px">${esc(r.value||'')}</td><td style="color:var(--muted);font-size:11px">${esc((r.source_file||'').split(/[\\/]/).pop())}</td></tr>`).join('');
+    el.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Key</th><th>Value</th><th>Source</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} keys</div>`;
+  }
+}
+
+// ── WER Crashes ───────────────────────────────────────────────────────────────
+async function loadWer() {
+  const el = $('d-wer');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  const q = ($('wer-q')||{value:''}).value.trim();
+  try {
+    const data = await api('/api/wer-crashes' + (q?`?q=${encodeURIComponent(q)}`:''));
+    const s = data.stats || {};
+    $('d-wer-stats').innerHTML = `<div class="kpi-row">
+      <div class="kpi kpi-high"><div class="v">${s.total||0}</div><div class="l">Total Crashes</div></div>
+      <div class="kpi"><div class="v">${s.unique_apps||0}</div><div class="l">Unique Apps</div></div>
+      ${s.first_crash?`<div class="kpi"><div class="v" style="font-size:11px">${ts(s.first_crash)}</div><div class="l">First Crash</div></div>`:''}
+      ${s.last_crash?`<div class="kpi"><div class="v" style="font-size:11px">${ts(s.last_crash)}</div><div class="l">Last Crash</div></div>`:''}
+    </div>`;
+    const rows = data.rows || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No crash reports found.</div>'; return; }
+    const suspApps = /powershell|cmd|wscript|cscript|mshta|regsvr32|rundll32|svchost/i;
+    const body = rows.map(r=>{
+      const susp = suspApps.test(r.app_name||'') || suspApps.test(r.fault_module||'');
+      return `<tr${susp?' class="ioc-row"':''}>
+        <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.crash_time)}</td>
+        <td style="color:${susp?'var(--high)':'var(--accent)'}">${esc(r.app_name||'')}</td>
+        <td style="font-size:11px;color:var(--muted)">${esc(r.app_version||'')}</td>
+        <td style="color:var(--med)">${esc(r.fault_module||'')}</td>
+        <td style="font-family:monospace;font-size:11px">${esc(r.exception_code||'')}</td>
+        <td style="font-family:monospace;font-size:11px">${esc(r.exception_offset||'')}</td>
+        <td style="font-size:11px;color:var(--muted)">${esc((r.source_file||'').split(/[\\/]/).pop())}</td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="wer-tbl"><table><thead><tr><th>Time</th><th>App</th><th>Version</th><th>Fault Module</th><th>Exception</th><th>Offset</th><th>Source</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} crashes <button onclick="exportCsv('wer-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+  } catch(e) { el.innerHTML=`<div class="empty">Error: ${esc(e.message)}</div>`; }
+}
+
+// ── SRUM ──────────────────────────────────────────────────────────────────────
+let _srumData = null;
+let _srumCurTab = 'net';
+
+async function loadSrum() {
+  const q = ($('srum-q')||{value:''}).value.trim();
+  _srumData = null;
+  const el = $('d-srum-net');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    _srumData = await api('/api/srum' + (q?`?q=${encodeURIComponent(q)}`:''));
+    srumTab(_srumCurTab, $('srum-tab-'+_srumCurTab));
+  } catch(e) { el.innerHTML=`<div class="empty">Error: ${esc(e.message)}</div>`; }
+}
+
+function srumTab(tab, btn) {
+  _srumCurTab = tab;
+  document.querySelectorAll('#v-srum .qbtn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  $('d-srum-net').style.display = tab==='net'?'':'none';
+  $('d-srum-app').style.display = tab==='app'?'':'none';
+  if (!_srumData) return;
+
+  // Top apps bar
+  const topNet = _srumData.top_network || [];
+  const topApp = _srumData.top_app || [];
+  const topList = tab==='net' ? topNet : topApp;
+  const topHtml = topList.slice(0,8).map(r=>{
+    const val = tab==='net'
+      ? `↑${fmtBytes(r.total_sent)} ↓${fmtBytes(r.total_recvd)}`
+      : `${((r.total_fg_cycles||0)/1e9).toFixed(1)}B cycles`;
+    const name = (r.app_name||'?').split(/[\\/]/).pop();
+    return `<div class="kpi" style="min-width:120px;cursor:default" title="${esc(r.app_name||'')}"><div class="v" style="font-size:11px;word-break:break-all">${esc(name)}</div><div class="l">${val}</div></div>`;
+  }).join('');
+  $('d-srum-top').innerHTML = `<div class="kpi-row" style="flex-wrap:wrap">${topHtml}</div>`;
+
+  if (tab === 'net') {
+    const rows = _srumData.network_usage || [];
+    if (!rows.length) { $('d-srum-net').innerHTML='<div class="empty">No network usage data.</div>'; return; }
+    const body = rows.map(r=>`<tr>
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.timestamp)}</td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent)" title="${esc(r.app_name||'')}">${esc((r.app_name||'').split(/[\\/]/).pop())}</td>
+      <td>${esc(r.user_name||'')}</td>
+      <td style="text-align:right;font-family:monospace">${fmtBytes(r.bytes_sent)}</td>
+      <td style="text-align:right;font-family:monospace">${fmtBytes(r.bytes_recvd)}</td>
+    </tr>`).join('');
+    $('d-srum-net').innerHTML = `<div class="tbl-wrap" id="srum-net-tbl"><table><thead><tr><th>Time</th><th>App</th><th>User</th><th style="text-align:right">Sent</th><th style="text-align:right">Received</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} records <button onclick="exportCsv('srum-net-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+  } else {
+    const rows = _srumData.app_usage || [];
+    if (!rows.length) { $('d-srum-app').innerHTML='<div class="empty">No app usage data.</div>'; return; }
+    const body = rows.map(r=>`<tr>
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.timestamp)}</td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent)" title="${esc(r.app_name||'')}">${esc((r.app_name||'').split(/[\\/]/).pop())}</td>
+      <td>${esc(r.user_name||'')}</td>
+      <td style="text-align:right;font-family:monospace">${((r.fg_cycles||0)/1e9).toFixed(2)}B</td>
+      <td style="text-align:right;font-family:monospace">${((r.bg_cycles||0)/1e9).toFixed(2)}B</td>
+      <td style="text-align:right;font-family:monospace">${fmtBytes(r.fg_bytes_read)}</td>
+      <td style="text-align:right;font-family:monospace">${fmtBytes(r.fg_bytes_written)}</td>
+    </tr>`).join('');
+    $('d-srum-app').innerHTML = `<div class="tbl-wrap" id="srum-app-tbl"><table><thead><tr><th>Time</th><th>App</th><th>User</th><th style="text-align:right">FG Cycles</th><th style="text-align:right">BG Cycles</th><th style="text-align:right">Read</th><th style="text-align:right">Written</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} records <button onclick="exportCsv('srum-app-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+  }
+}
+
+function fmtBytes(n) {
+  if (!n || n===0) return '0 B';
+  const units=['B','KB','MB','GB','TB'];
+  let i=0; n=Number(n);
+  while(n>=1024&&i<units.length-1){n/=1024;i++;}
+  return n.toFixed(i>0?1:0)+' '+units[i];
+}
+
+// ── BAM/DAM ───────────────────────────────────────────────────────────────────
+async function loadBamDam() {
+  const el = $('d-bam-dam');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  const q = ($('bam-q')||{value:''}).value.trim();
+  try {
+    const data = await api('/api/bam-dam' + (q?`?q=${encodeURIComponent(q)}`:''));
+    const s = data.stats || {};
+    $('d-bam-stats').innerHTML = `<div class="kpi-row">
+      <div class="kpi kpi-accent"><div class="v">${s.total||0}</div><div class="l">Executions</div></div>
+      <div class="kpi"><div class="v">${s.unique_sids||0}</div><div class="l">Users (SIDs)</div></div>
+      ${s.first_run?`<div class="kpi"><div class="v" style="font-size:11px">${ts(s.first_run)}</div><div class="l">Earliest Run</div></div>`:''}
+      ${s.last_run?`<div class="kpi"><div class="v" style="font-size:11px">${ts(s.last_run)}</div><div class="l">Latest Run</div></div>`:''}
+    </div>`;
+    const rows = data.rows || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No BAM/DAM execution data.</div>'; return; }
+    const suspPath = /\\temp\\|\\appdata\\|\\public\\|\\programdata\\|\\downloads\\/i;
+    const body = rows.map(r=>{
+      const susp = suspPath.test(r.path||'');
+      const name = (r.path||'').split(/[\\/]/).pop();
+      return `<tr${susp?' class="ioc-row"':''}>
+        <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.last_run)}</td>
+        <td style="color:${susp?'var(--high)':'var(--accent)'}" title="${esc(r.path||'')}">${esc(name)}</td>
+        <td style="font-size:11px;color:var(--muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.path||'')}">${esc(r.path||'')}</td>
+        <td style="font-size:11px;color:var(--muted);font-family:monospace">${esc(r.sid||'')}</td>
+        <td style="font-size:11px;color:var(--muted)">${esc(r.source||'')}</td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="bam-tbl"><table><thead><tr><th>Last Run</th><th>Executable</th><th>Full Path</th><th>SID</th><th>Source</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} entries <button onclick="exportCsv('bam-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+  } catch(e) { el.innerHTML=`<div class="empty">Error: ${esc(e.message)}</div>`; }
+}
+
+// ── Registry MRU ──────────────────────────────────────────────────────────────
+let _mruData = null;
+let _mruCurTab = 'urls';
+
+async function loadRegMru() {
+  _mruData = null;
+  const el = $('d-mru-urls');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    _mruData = await api('/api/registry-mru');
+    mruTab(_mruCurTab, $('mru-tab-'+_mruCurTab));
+  } catch(e) { el.innerHTML=`<div class="empty">Error: ${esc(e.message)}</div>`; }
+}
+
+function mruTab(tab, btn) {
+  _mruCurTab = tab;
+  document.querySelectorAll('#v-reg-mru .qbtn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  ['urls','run','rdp','mui','opensave'].forEach(t=>{ const d=$('d-mru-'+t); if(d) d.style.display=t===tab?'':'none'; });
+  if (!_mruData) return;
+  const el = $('d-mru-'+tab);
+  if (!el) return;
+
+  if (tab === 'urls') {
+    const rows = _mruData.typed_urls || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No Typed URLs found.</div>'; return; }
+    const body = rows.map(r=>`<tr>
+      <td style="text-align:center;color:var(--muted)">${r.visit_order??''}</td>
+      <td style="color:var(--accent);word-break:break-all"><a href="#" onclick="pivotSearch(${JSON.stringify(r.url||'')});return false">${esc(r.url||'')}</a></td>
+      <td>${esc(r.user||'')}</td>
+    </tr>`).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="mru-urls-tbl"><table><thead><tr><th>#</th><th>URL</th><th>User</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} URLs</div>`;
+  } else if (tab === 'run') {
+    const rows = _mruData.run_mru || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No Run MRU entries found.</div>'; return; }
+    const body = rows.map(r=>`<tr>
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.modified)}</td>
+      <td style="text-align:center;color:var(--muted)">${r.mru_order??''}</td>
+      <td style="font-family:monospace;color:var(--accent);word-break:break-all">${esc(r.command||'')}</td>
+      <td>${esc(r.user||'')}</td>
+    </tr>`).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="mru-run-tbl"><table><thead><tr><th>Modified</th><th>#</th><th>Command</th><th>User</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} entries</div>`;
+  } else if (tab === 'rdp') {
+    const rows = _mruData.rdp_history || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No RDP client history found.</div>'; return; }
+    const body = rows.map(r=>`<tr>
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.modified)}</td>
+      <td style="color:var(--accent);font-family:monospace"><a href="#" onclick="pivotSearch(${JSON.stringify(r.server||'')});return false">${esc(r.server||'')}</a></td>
+      <td>${esc(r.username||'')}</td>
+      <td>${esc(r.user||'')}</td>
+    </tr>`).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="mru-rdp-tbl"><table><thead><tr><th>Last Connected</th><th>Server</th><th>Username</th><th>Profile User</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} servers</div>`;
+  } else if (tab === 'mui') {
+    const rows = _mruData.muicache || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No MUICache entries found.</div>'; return; }
+    const suspPath = /\\temp\\|\\appdata\\|\\public\\|\\programdata\\|\\downloads\\/i;
+    const body = rows.map(r=>{
+      const susp = suspPath.test(r.exe_path||'');
+      return `<tr${susp?' class="ioc-row"':''}>
+        <td style="color:${susp?'var(--high)':'var(--accent)'};font-family:monospace;font-size:11px;word-break:break-all">${esc(r.exe_path||'')}</td>
+        <td>${esc(r.description||'')}</td>
+        <td>${esc(r.user||'')}</td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="mru-mui-tbl"><table><thead><tr><th>Executable Path</th><th>Description</th><th>User</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} entries</div>`;
+  } else if (tab === 'opensave') {
+    const rows = _mruData.opensave_mru || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No OpenSave MRU entries found.</div>'; return; }
+    const body = rows.map(r=>`<tr>
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.modified)}</td>
+      <td style="text-align:center;color:var(--muted)">${r.mru_order??''}</td>
+      <td style="color:var(--muted);font-family:monospace">.${esc(r.extension||'')}</td>
+      <td style="font-family:monospace;font-size:11px;word-break:break-all;color:var(--accent)">${esc(r.path||'')}</td>
+      <td>${esc(r.user||'')}</td>
+    </tr>`).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="mru-os-tbl"><table><thead><tr><th>Modified</th><th>#</th><th>Ext</th><th>Path</th><th>User</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} entries</div>`;
+  }
+}
+
+// ── BITS Jobs ─────────────────────────────────────────────────────────────────
+async function loadBits() {
+  const el = $('d-bits');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  const q = ($('bits-q')||{value:''}).value.trim();
+  try {
+    const data = await api('/api/bits' + (q?`?q=${encodeURIComponent(q)}`:''));
+    const jobs = data.jobs || [];
+    const files = data.files || [];
+    if (!jobs.length && !files.length) { el.innerHTML='<div class="empty">No BITS jobs found.</div>'; return; }
+    let html = '';
+    if (jobs.length) {
+      const suspUrl = /\.exe|\.dll|\.ps1|\.bat|\.vbs|\.hta|pastebin|transfer\.sh|mega\.|anonfile/i;
+      const jobBody = jobs.map(r=>{
+        const susp = suspUrl.test(r.job_name||'');
+        return `<tr${susp?' class="ioc-row"':''}>
+          <td style="color:${susp?'var(--high)':'var(--accent)'}">${esc(r.job_name||'')}</td>
+          <td><span class="badge">${esc(r.job_type||'')}</span></td>
+          <td><span class="badge ${r.job_state==='Transferred'?'b-low':r.job_state==='Error'?'b-high':'b-info'}">${esc(r.job_state||'')}</span></td>
+          <td style="font-family:monospace;font-size:11px">${esc(r.owner||'')}</td>
+          <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.created_time)}</td>
+          <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.completed_time)}</td>
+        </tr>`;
+      }).join('');
+      html += `<div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">BITS Jobs (${jobs.length})</div>
+        <div class="tbl-wrap" id="bits-jobs-tbl" style="margin-bottom:16px"><table><thead><tr><th>Job Name</th><th>Type</th><th>State</th><th>Owner</th><th>Created</th><th>Completed</th></tr></thead><tbody>${jobBody}</tbody></table></div>
+        <div class="row-count">${jobs.length} jobs <button onclick="exportCsv('bits-jobs-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+    }
+    if (files.length) {
+      const suspUrl = /\.exe|\.dll|\.ps1|\.bat|pastebin|transfer\.sh|mega\.|anonfile/i;
+      const fileBody = files.map(r=>{
+        const susp = suspUrl.test(r.remote_url||'') || suspUrl.test(r.local_path||'');
+        return `<tr${susp?' class="ioc-row"':''}>
+          <td style="color:${susp?'var(--high)':'var(--accent)'};word-break:break-all;font-size:11px"><a href="#" onclick="pivotSearch(${JSON.stringify(r.remote_url||'')});return false">${esc(r.remote_url||'')}</a></td>
+          <td style="font-family:monospace;font-size:11px;word-break:break-all">${esc(r.local_path||'')}</td>
+          <td style="text-align:right;font-family:monospace">${fmtBytes(r.bytes_total)}</td>
+        </tr>`;
+      }).join('');
+      html += `<div style="font-size:12px;font-weight:600;color:var(--muted);margin:16px 0 6px">BITS Files (${files.length})</div>
+        <div class="tbl-wrap" id="bits-files-tbl"><table><thead><tr><th>Remote URL</th><th>Local Path</th><th style="text-align:right">Size</th></tr></thead><tbody>${fileBody}</tbody></table></div>
+        <div class="row-count">${files.length} files <button onclick="exportCsv('bits-files-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML=`<div class="empty">Error: ${esc(e.message)}</div>`; }
+}
+
+// ── USB History ───────────────────────────────────────────────────────────────
+async function loadUsb() {
+  const el = $('d-usb');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  const q = ($('usb-q')||{value:''}).value.trim();
+  try {
+    const data = await api('/api/usb-history' + (q?`?q=${encodeURIComponent(q)}`:''));
+    const s = data.stats || {};
+    $('d-usb-stats').innerHTML = `<div class="kpi-row">
+      <div class="kpi kpi-accent"><div class="v">${s.total||0}</div><div class="l">Total Devices</div></div>
+      <div class="kpi"><div class="v">${s.unique_devices||0}</div><div class="l">Unique Serials</div></div>
+      ${s.first_seen?`<div class="kpi"><div class="v" style="font-size:11px">${ts(s.first_seen)}</div><div class="l">First Install</div></div>`:''}
+      ${s.last_seen?`<div class="kpi"><div class="v" style="font-size:11px">${ts(s.last_seen)}</div><div class="l">Last Arrival</div></div>`:''}
+    </div>`;
+    const rows = data.rows || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No USB devices found in registry.</div>'; return; }
+    const body = rows.map(r=>`<tr>
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.last_arrival)}</td>
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.first_install)}</td>
+      <td style="color:var(--accent)">${esc(r.friendly_name||'')}</td>
+      <td style="font-family:monospace;font-size:11px">${esc(r.serial_number||'')}</td>
+      <td style="text-align:center;color:var(--low);font-weight:600">${esc(r.drive_letter||'')}</td>
+      <td>${esc(r.volume_name||'')}</td>
+      <td style="color:var(--muted)">${esc(r.manufacturer||'')}</td>
+      <td>${esc(r.user||'')}</td>
+    </tr>`).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="usb-tbl"><table><thead><tr><th>Last Arrival</th><th>First Install</th><th>Device Name</th><th>Serial</th><th>Drive</th><th>Volume</th><th>Manufacturer</th><th>User</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} devices <button onclick="exportCsv('usb-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+  } catch(e) { el.innerHTML=`<div class="empty">Error: ${esc(e.message)}</div>`; }
+}
+
+// ── Network Adapters ──────────────────────────────────────────────────────────
+async function loadNetAdapters() {
+  const el = $('d-net-adapters');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const data = await api('/api/network-adapters');
+    const rows = data.rows || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No network adapter configuration found.</div>'; return; }
+    const body = rows.map(r=>`<tr>
+      <td style="font-family:monospace;font-size:11px;color:var(--muted)">${esc(r.adapter_name||'')}</td>
+      <td style="color:var(--accent)">${esc(r.description||'')}</td>
+      <td style="font-family:monospace"><a href="#" onclick="pivotSearch(${JSON.stringify(r.ip_address||'')});return false">${esc(r.ip_address||'')}</a></td>
+      <td style="font-family:monospace;font-size:11px">${esc(r.subnet_mask||'')}</td>
+      <td style="font-family:monospace"><a href="#" onclick="pivotSearch(${JSON.stringify(r.default_gateway||'')});return false">${esc(r.default_gateway||'')}</a></td>
+      <td style="font-size:11px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.dns_servers||'')}">${esc(r.dns_servers||'')}</td>
+      <td style="text-align:center">${r.dhcp_enabled==='1'?'<span class="badge b-info">DHCP</span>':'<span class="badge">Static</span>'}</td>
+      <td style="font-family:monospace;font-size:11px">${esc(r.mac_address||'')}</td>
+    </tr>`).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="netadp-tbl"><table><thead><tr><th>GUID</th><th>Description</th><th>IP Address</th><th>Subnet</th><th>Gateway</th><th>DNS</th><th>Mode</th><th>MAC</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} adapters <button onclick="exportCsv('netadp-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+  } catch(e) { el.innerHTML=`<div class="empty">Error: ${esc(e.message)}</div>`; }
+}
+
+// ── Installed Software ────────────────────────────────────────────────────────
+async function loadSoftware() {
+  const el = $('d-software');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  const q = ($('sw-q')||{value:''}).value.trim();
+  try {
+    const data = await api('/api/installed-software' + (q?`?q=${encodeURIComponent(q)}`:''));
+    const s = data.stats || {};
+    $('d-sw-stats').innerHTML = `<div class="kpi-row">
+      <div class="kpi kpi-accent"><div class="v">${s.total||0}</div><div class="l">Total Programs</div></div>
+      <div class="kpi"><div class="v">${s.unique_publishers||0}</div><div class="l">Publishers</div></div>
+    </div>`;
+    const rows = data.rows || [];
+    if (!rows.length) { el.innerHTML='<div class="empty">No installed software found.</div>'; return; }
+    const suspSw = /anydesk|teamviewer|ngrok|nmap|wireshark|mimikatz|meterpreter|netcat|psexec|cobalt|empire|metasploit/i;
+    const body = rows.map(r=>{
+      const susp = suspSw.test(r.display_name||'') || suspSw.test(r.publisher||'');
+      return `<tr${susp?' class="ioc-row"':''}>
+        <td style="color:${susp?'var(--high)':'var(--fg)'}">${esc(r.display_name||'')}</td>
+        <td style="font-size:11px;color:var(--muted)">${esc(r.display_version||'')}</td>
+        <td style="font-size:11px">${esc(r.publisher||'')}</td>
+        <td style="font-size:11px;white-space:nowrap">${esc(r.install_date||'')}</td>
+        <td style="font-size:11px;color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.install_location||'')}">${esc(r.install_location||'')}</td>
+        <td>${esc(r.user||'')}</td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="sw-tbl"><table><thead><tr><th>Name</th><th>Version</th><th>Publisher</th><th>Install Date</th><th>Location</th><th>User</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} programs <button onclick="exportCsv('sw-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+  } catch(e) { el.innerHTML=`<div class="empty">Error: ${esc(e.message)}</div>`; }
+}
+
+// ── NTDS Accounts ─────────────────────────────────────────────────────────────
+let ntdsDisabledOnly = false;
+let ntdsComputerOnly = false;
+
+async function loadNtds() {
+  const el = $('d-ntds');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  const q = ($('ntds-q')||{value:''}).value.trim();
+  try {
+    const data = await api('/api/ntds' + (q?`?q=${encodeURIComponent(q)}`:''));
+    const s = data.stats || {};
+    $('d-ntds-stats').innerHTML = `<div class="kpi-row">
+      <div class="kpi kpi-accent"><div class="v">${s.total||0}</div><div class="l">Total Accounts</div></div>
+      <div class="kpi"><div class="v">${s.users||0}</div><div class="l">Users</div></div>
+      <div class="kpi"><div class="v">${s.computers||0}</div><div class="l">Computers</div></div>
+      <div class="kpi kpi-med"><div class="v">${s.disabled||0}</div><div class="l">Disabled</div></div>
+      <div class="kpi"><div class="v">${s.deleted||0}</div><div class="l">Deleted</div></div>
+    </div>`;
+    let rows = data.rows || [];
+    if (ntdsDisabledOnly) rows = rows.filter(r=>r.is_disabled);
+    if (ntdsComputerOnly) rows = rows.filter(r=>(r.sam_account_name||'').endsWith('$'));
+    if (!rows.length) { el.innerHTML='<div class="empty">No accounts match filter.</div>'; return; }
+    const body = rows.map(r=>{
+      const isComp = (r.sam_account_name||'').endsWith('$');
+      const isDisabled = r.is_disabled;
+      const isPwdNeverExp = r.pwd_never_expires;
+      const isNoPwd = r.no_pwd_required;
+      const flags = [
+        isDisabled?`<span class="badge b-med">Disabled</span>`:'',
+        isPwdNeverExp?`<span class="badge b-info">PwdNeverExp</span>`:'',
+        isNoPwd?`<span class="badge b-high">NoPwdReq</span>`:'',
+        r.is_deleted?`<span class="badge">Deleted</span>`:'',
+      ].filter(Boolean).join(' ');
+      return `<tr style="opacity:${isDisabled?'.55':'1'}">
+        <td style="color:${isComp?'var(--info)':isDisabled?'var(--muted)':'var(--accent)'};font-family:monospace">${esc(r.sam_account_name||'')}</td>
+        <td>${esc(r.display_name||'')}</td>
+        <td style="font-size:11px;color:var(--muted)">${esc(r.description||'')}</td>
+        <td style="font-family:monospace;font-size:10px;color:var(--muted)">${esc(r.object_sid||'')}</td>
+        <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.last_logon)}</td>
+        <td style="font-family:monospace;font-size:11px;white-space:nowrap">${ts(r.pwd_last_set)}</td>
+        <td style="font-size:11px">${flags}</td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<div class="tbl-wrap" id="ntds-tbl"><table><thead><tr><th>Account</th><th>Display Name</th><th>Description</th><th>SID</th><th>Last Logon</th><th>Pwd Set</th><th>Flags</th></tr></thead><tbody>${body}</tbody></table></div><div class="row-count">${rows.length} accounts <button onclick="exportCsv('ntds-tbl')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:1px 7px;cursor:pointer;font-size:11px;margin-left:8px">⬇ CSV</button></div>`;
+  } catch(e) { el.innerHTML=`<div class="empty">Error: ${esc(e.message)}</div>`; }
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
@@ -5273,6 +6600,7 @@ function switchTab(v) {
     amcache:          loadAmcache,
     powershell:       loadPsScripts,
     browser:          loadBrowser,
+    mail:             loadMail,
     lateral:          loadLateral,
     registry:         loadRegistry,
     persistence:      loadPersistence,
@@ -5282,6 +6610,16 @@ function switchTab(v) {
     notes:            loadNotes,
     hashes:           loadHashes,
     search:           ()=>{ const sq=$('sq'); if(sq) sq.focus(); },
+    anydesk:          loadAnyDesk,
+    wer:              loadWer,
+    srum:             loadSrum,
+    'bam-dam':        loadBamDam,
+    'reg-mru':        loadRegMru,
+    bits:             loadBits,
+    ntds:             loadNtds,
+    usb:              loadUsb,
+    'net-adapters':   loadNetAdapters,
+    software:         loadSoftware,
   };
   if (loaders[v]) loaders[v]();
 }

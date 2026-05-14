@@ -4,18 +4,48 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"forensiq/internal/detect"
 	iocext "forensiq/internal/ioc"
+	"forensiq/internal/parsers"
+	"forensiq/internal/parsers/triage"
 	"forensiq/internal/report"
 	"forensiq/internal/sigma"
 )
+
+// Timeline cache — populated in background at startup, refreshed after re-analysis.
+var (
+	tlCacheData []map[string]any
+	tlCacheMu   sync.RWMutex
+)
+
+// WarmTimelineCache builds the full timeline dataset in the background and
+// stores it in tlCacheData so subsequent requests are served from memory.
+func WarmTimelineCache() {
+	go func() {
+		data := buildTimelineRows("", "")
+		tlCacheMu.Lock()
+		tlCacheData = data
+		tlCacheMu.Unlock()
+		log.Printf("timeline cache: %d events ready", len(data))
+	}()
+}
+
+// InvalidateTimelineCache clears the cache; call after re-analysis.
+func InvalidateTimelineCache() {
+	tlCacheMu.Lock()
+	tlCacheData = nil
+	tlCacheMu.Unlock()
+}
 
 func handleSummary(w http.ResponseWriter, r *http.Request) {
 	tables := []string{
@@ -23,7 +53,7 @@ func handleSummary(w http.ResponseWriter, r *http.Request) {
 		"evtx_events", "auth_events", "persistence", "services",
 		"scheduled_tasks", "mem_pslist", "mem_netscan", "ioc_indicators",
 		"mem_malfind", "defender_events", "proc_creation", "ps_scriptblock",
-		"lnk_files", "jumplists", "recycle_bin", "shellbags",
+		"lnk_files", "jumplists", "recycle_bin", "shellbags", "emails",
 	}
 	counts := make(map[string]int64)
 	for _, t := range tables {
@@ -199,8 +229,21 @@ var builtinDetectTitles = map[string]string{
 	"detect:proc_create_lolbin":    "LOLBin Process Created (4688)",
 	"detect:proc_create_susp_parent": "Suspicious Parent-Child Process Relationship",
 	"detect:proc_create_susp_path": "Process Created from Suspicious Path (4688)",
-	"detect:dcsync":                "DCSync Attack (Credential Dump)",
-	"detect:kerberoasting":         "Kerberoasting (RC4 Ticket Request)",
+	"detect:dcsync":                     "DCSync Attack (Credential Dump)",
+	"detect:kerberoasting":              "Kerberoasting (RC4 Ticket Request)",
+	"detect:wannacry_file_indicators":   "WannaCry File Indicators",
+	"detect:ransomware_ext_usnjrnl":     "Ransomware Extension Activity (USN Journal)",
+	"detect:anomalous_routing_svc":      "Anomalous Routing/IPRIP Service",
+	"detect:mssql_attack_surface":       "MSSQL Attack Surface Activity",
+	"detect:service_binary_wannacry_ts": "Service Binary with WannaCry Timestamp",
+	"detect:anon_smb_cluster":           "Anonymous SMB Access Cluster",
+	"detect:event_log_gap":              "Event Log Gap (Possible Log Tampering)",
+	"detect:anydesk_incoming_session":   "AnyDesk Incoming Remote Session",
+	"detect:anydesk_unattended_config":  "AnyDesk Unattended Access Configured",
+	"detect:wer_crash_suspicious_app":   "WER Crash in Suspicious Application",
+	"detect:dhcp_network_config":        "DHCP Network Configuration Change",
+	"detect:bits_suspicious_download":   "BITS Suspicious Download (LOLBin/T1197)",
+	"detect:ad_accounts_with_old_logon": "Stale/Suspicious AD Accounts",
 }
 
 func handleDetections(w http.ResponseWriter, r *http.Request) {
@@ -251,6 +294,7 @@ func handleRunDetect(w http.ResponseWriter, r *http.Request) {
 		jsonErr(w, 405, "POST required")
 		return
 	}
+	InvalidateTimelineCache()
 	results, err := detect.RunAll(db)
 	if err != nil {
 		jsonErr(w, 500, err.Error())
@@ -273,6 +317,9 @@ func handleRunDetect(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	// Rebuild timeline cache with fresh detection results.
+	WarmTimelineCache()
 
 	jsonOK(w, map[string]any{
 		"detect_hits": detectHits,
@@ -369,10 +416,10 @@ var timelineSources = []struct {
 	table string
 	sel   string
 }{
-	{"evtx_events", `SELECT timestamp AS ts, 'evtx' AS source, CAST(event_id AS VARCHAR) AS category, COALESCE(message,'') AS detail, computer AS extra FROM evtx_events WHERE timestamp IS NOT NULL`},
+	{"evtx_events", `SELECT timestamp AS ts, 'evtx' AS source, CAST(event_id AS VARCHAR) AS category, COALESCE(channel,'') AS detail, computer AS extra FROM evtx_events WHERE timestamp IS NOT NULL AND timestamp >= '2000-01-01'::TIMESTAMP AND timestamp <= CURRENT_TIMESTAMP`},
 	{"auth_events", `SELECT timestamp AS ts, 'auth' AS source, CAST(event_id AS VARCHAR) AS category, COALESCE("user",'') AS detail, COALESCE(src_ip,'') AS extra FROM auth_events WHERE timestamp IS NOT NULL`},
 	{"defender_events", `SELECT timestamp AS ts, 'defender' AS source, severity AS category, COALESCE(threat_name,'') AS detail, COALESCE(path,'') AS extra FROM defender_events WHERE timestamp IS NOT NULL`},
-	{"ioc_indicators", `SELECT first_seen AS ts, 'detect' AS source, confidence AS category, ioc_indicators.source AS detail, value AS extra FROM ioc_indicators WHERE first_seen IS NOT NULL`},
+	{"ioc_indicators", `SELECT first_seen AS ts, 'detect' AS source, confidence AS category, ioc_indicators.source || chr(1) || COALESCE(notes,'') AS detail, value AS extra FROM ioc_indicators WHERE first_seen IS NOT NULL AND first_seen <= CURRENT_TIMESTAMP`},
 	{"prefetch", `SELECT last_run AS ts, 'prefetch' AS source, filename AS category, CAST(run_count AS VARCHAR)||' runs' AS detail, path AS extra FROM prefetch WHERE last_run IS NOT NULL`},
 	{"amcache", `SELECT first_seen AS ts, 'amcache' AS source, 'exec' AS category, path AS detail, COALESCE(sha256,'') AS extra FROM amcache WHERE first_seen IS NOT NULL`},
 	{"mft", `SELECT modified AS ts, 'mft' AS source, 'file' AS category, path AS detail, CAST(COALESCE(size,0) AS VARCHAR) AS extra FROM mft WHERE modified IS NOT NULL AND is_dir=false AND (path ILIKE '%\Temp\%.exe' OR path ILIKE '%\Temp\%.dll' OR path ILIKE '%\AppData\Roaming\%.exe' OR path ILIKE '%\Downloads\%.exe' OR path ILIKE '%\ProgramData\%.exe' OR path ILIKE '%\Temp\%.ps1')`},
@@ -404,38 +451,48 @@ func getExistingTables() map[string]bool {
 	return m
 }
 
-func handleTimeline(w http.ResponseWriter, r *http.Request) {
-	filter := r.URL.Query().Get("source")
-	q      := r.URL.Query().Get("q")
-
+// buildTimelineRows runs the UNION ALL query across all timeline sources and
+// returns up to 10 000 rows sorted DESC. filter and q are optional SQL-level
+// restrictions (filter = source label, q = free-text substring search).
+// Called at startup by WarmTimelineCache and as fallback when cache is empty.
+func buildTimelineRows(filter, q string) []map[string]any {
 	if existingTables == nil {
 		existingTables = getExistingTables()
 	}
 
-	// Per-source row budgets: noisy tables are capped so sparse sources aren't squeezed out.
 	srcBudget := func(table string) int {
 		switch table {
 		case "evtx_events":
-			return 3000
+			return 2000
 		case "auth_events":
-			return 1500
+			return 1000
 		default:
 			return 500
 		}
 	}
 
+	sourceOfTable := map[string]string{
+		"evtx_events": "evtx", "auth_events": "auth", "defender_events": "defender",
+		"ioc_indicators": "detect", "prefetch": "prefetch", "amcache": "amcache",
+		"mft": "mft", "proc_creation": "proc_4688", "sysmon_process": "sysmon",
+		"sysmon_network": "sysmon_net", "bam_dam": "bam_dam", "userassist": "userassist",
+	}
+
 	parts := []string{}
 	for i, src := range timelineSources {
-		if existingTables[src.table] {
-			parts = append(parts, fmt.Sprintf(
-				"(SELECT ts,source,category,detail,extra FROM (%s) _t%d ORDER BY ts DESC LIMIT %d)",
-				src.sel, i, srcBudget(src.table),
-			))
+		if !existingTables[src.table] {
+			continue
 		}
+		if filter != "" && sourceOfTable[src.table] != filter {
+			continue
+		}
+		parts = append(parts, fmt.Sprintf(
+			"(SELECT ts,source,category,detail,extra FROM (%s) _t%d ORDER BY ts DESC LIMIT %d)",
+			src.sel, i, srcBudget(src.table),
+		))
 	}
 	if len(parts) == 0 {
-		jsonOK(w, []map[string]any{})
-		return
+		return []map[string]any{}
 	}
 
 	base := "SELECT ts,source,category,detail,extra FROM (" +
@@ -453,7 +510,60 @@ func handleTimeline(w http.ResponseWriter, r *http.Request) {
 	}
 	base += " ORDER BY ts DESC LIMIT 10000"
 
-	jsonOK(w, safeQuery(base, args...))
+	return safeQuery(base, args...)
+}
+
+func handleTimeline(w http.ResponseWriter, r *http.Request) {
+	filter := r.URL.Query().Get("source")
+	q      := r.URL.Query().Get("q")
+
+	// For unfiltered requests serve from in-memory cache (built at startup).
+	if filter == "" && q == "" {
+		tlCacheMu.RLock()
+		cached := tlCacheData
+		tlCacheMu.RUnlock()
+		if cached != nil {
+			jsonOK(w, cached)
+			return
+		}
+		// Cache not yet ready — build inline and cache the result.
+		rows := buildTimelineRows("", "")
+		tlCacheMu.Lock()
+		if tlCacheData == nil {
+			tlCacheData = rows
+		}
+		tlCacheMu.Unlock()
+		jsonOK(w, rows)
+		return
+	}
+
+	// Filtered/search requests: serve from cache with in-memory filtering.
+	tlCacheMu.RLock()
+	cached := tlCacheData
+	tlCacheMu.RUnlock()
+	if cached != nil {
+		rows := make([]map[string]any, 0, len(cached))
+		qLow := strings.ToLower(q)
+		for _, row := range cached {
+			if filter != "" && row["source"] != filter {
+				continue
+			}
+			if q != "" {
+				det := strings.ToLower(fmt.Sprintf("%v", row["detail"]))
+				cat := strings.ToLower(fmt.Sprintf("%v", row["category"]))
+				ext := strings.ToLower(fmt.Sprintf("%v", row["extra"]))
+				if !strings.Contains(det, qLow) && !strings.Contains(cat, qLow) && !strings.Contains(ext, qLow) {
+					continue
+				}
+			}
+			rows = append(rows, row)
+		}
+		jsonOK(w, rows)
+		return
+	}
+
+	// Fallback: direct DB query (before cache is ready, with filter).
+	jsonOK(w, buildTimelineRows(filter, q))
 }
 
 func handlePrefetch(w http.ResponseWriter, r *http.Request) {
@@ -613,9 +723,11 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlePersistence(w http.ResponseWriter, r *http.Request) {
+	// Exclude Windows performance-counter services that have no binary path.
 	rows := safeQuery(`
 		SELECT source, type, name, command, modified
 		FROM v_persistence
+		WHERE NOT (source = 'service' AND (command IS NULL OR TRIM(command) = ''))
 		ORDER BY modified DESC NULLS LAST
 		LIMIT 1000
 	`)
@@ -1532,6 +1644,32 @@ func handlePivot(w http.ResponseWriter, r *http.Request) {
 		") t WHERE ts IS NOT NULL ORDER BY ts DESC LIMIT 500"
 
 	jsonOK(w, safeQuery(pivotSQL, args...))
+}
+
+// handleEventLookup fetches a single EVTX event by exact timestamp (and optional event_id)
+// so the timeline expand card can show the full message without loading it in bulk.
+func handleEventLookup(w http.ResponseWriter, r *http.Request) {
+	tsStr := r.URL.Query().Get("ts")
+	eid := r.URL.Query().Get("eid")
+	if tsStr == "" {
+		jsonErr(w, 400, "ts required")
+		return
+	}
+	query := `SELECT timestamp, event_id, channel, computer, message
+	          FROM evtx_events
+	          WHERE TRY_CAST(? AS TIMESTAMP) IS NOT NULL AND timestamp = TRY_CAST(? AS TIMESTAMP)`
+	args := []any{tsStr, tsStr}
+	if eid != "" {
+		query += " AND CAST(event_id AS VARCHAR) = ?"
+		args = append(args, eid)
+	}
+	query += " LIMIT 1"
+	rows := safeQuery(query, args...)
+	if len(rows) == 0 {
+		jsonOK(w, map[string]any{})
+		return
+	}
+	jsonOK(w, rows[0])
 }
 
 // handleEventContext returns all timeline events within ±window seconds of the given timestamp.
@@ -2866,4 +3004,390 @@ func handleUsnjrnl(w http.ResponseWriter, r *http.Request) {
 	total := safeQuery(`SELECT COUNT(*) AS cnt FROM usnjrnl` + where, args...)
 	reasons := safeQuery(`SELECT reason, COUNT(*) AS cnt FROM usnjrnl GROUP BY reason ORDER BY cnt DESC LIMIT 20`)
 	jsonOK(w, map[string]any{"rows": rows, "total": countFirst(total), "reasons": reasons})
+}
+
+// handleEmails returns the email list with optional search/filter.
+func handleEmails(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	folder := r.URL.Query().Get("folder")
+	hasAtt := r.URL.Query().Get("has_att")
+
+	where := " WHERE 1=1"
+	args := []any{}
+
+	if q != "" {
+		like := "%" + q + "%"
+		where += " AND (subject ILIKE ? OR from_addr ILIKE ? OR to_addrs ILIKE ? OR body_text ILIKE ?)"
+		args = append(args, like, like, like, like)
+	}
+	if folder != "" {
+		where += " AND folder = ?"
+		args = append(args, folder)
+	}
+	if hasAtt == "1" {
+		where += " AND has_attachments = TRUE"
+	}
+
+	rows := safeQuery(`
+		SELECT id, source_file, folder, message_id,
+		       from_addr, from_name, to_addrs, cc_addrs,
+		       subject, sent_at, received_at,
+		       LEFT(body_text, 300) AS body_preview,
+		       has_attachments, x_mailer, x_originating_ip
+		FROM emails`+where+`
+		ORDER BY COALESCE(sent_at, received_at) DESC NULLS LAST
+		LIMIT 2000`, args...)
+
+	stats := safeQuery(`
+		SELECT
+		  COUNT(*) AS total,
+		  COUNT(CASE WHEN has_attachments THEN 1 END) AS with_attachments,
+		  COUNT(DISTINCT from_addr) AS unique_senders,
+		  COUNT(DISTINCT folder) AS folders
+		FROM emails` + where, args...)
+
+	folders := safeQuery(`SELECT folder, COUNT(*) AS cnt FROM emails WHERE folder IS NOT NULL AND folder != '' GROUP BY folder ORDER BY cnt DESC LIMIT 50`)
+
+	topSenders := safeQuery(`SELECT from_addr, COUNT(*) AS cnt FROM emails` + where + ` GROUP BY from_addr ORDER BY cnt DESC LIMIT 20`, args...)
+
+	jsonOK(w, map[string]any{
+		"rows":        rows,
+		"stats":       first(stats),
+		"folders":     folders,
+		"top_senders": topSenders,
+	})
+}
+
+// handleEmailDetail returns full body + attachments + URLs for a single email.
+func handleEmailDetail(w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		jsonErr(w, 400, "id required")
+		return
+	}
+	emails := safeQuery(`
+		SELECT id, source_file, folder, message_id,
+		       from_addr, from_name, to_addrs, cc_addrs, bcc_addrs,
+		       subject, sent_at, received_at,
+		       body_text, body_html, has_attachments,
+		       x_mailer, x_originating_ip, reply_to, in_reply_to, headers_raw
+		FROM emails WHERE id = ?`, idStr)
+	if len(emails) == 0 {
+		jsonErr(w, 404, "not found")
+		return
+	}
+	attachments := safeQuery(`
+		SELECT filename, content_type, size_bytes, sha256, is_executable
+		FROM email_attachments WHERE email_id = ?`, idStr)
+	urls := safeQuery(`
+		SELECT url, domain FROM email_urls WHERE email_id = ? LIMIT 200`, idStr)
+
+	jsonOK(w, map[string]any{
+		"email":       emails[0],
+		"attachments": attachments,
+		"urls":        urls,
+	})
+}
+
+func handleAnyDesk(w http.ResponseWriter, r *http.Request) {
+	sessions := safeQuery(`
+		SELECT direction, timestamp, auth_method, client_alias, anydesk_id, source_file
+		FROM anydesk_sessions
+		ORDER BY timestamp DESC NULLS LAST
+		LIMIT 1000
+	`)
+	events := safeQuery(`
+		SELECT timestamp, pid, level, component, LEFT(message, 500) AS message, source_file
+		FROM anydesk_events
+		ORDER BY timestamp DESC NULLS LAST
+		LIMIT 2000
+	`)
+	config := safeQuery(`
+		SELECT key, value, source_file
+		FROM anydesk_config
+		ORDER BY key
+	`)
+	stats := safeQuery(`
+		SELECT
+		  COUNT(*) AS total_sessions,
+		  COUNT(CASE WHEN direction='Incoming' THEN 1 END) AS incoming,
+		  COUNT(CASE WHEN direction='Outgoing' THEN 1 END) AS outgoing,
+		  COUNT(DISTINCT anydesk_id) AS unique_ids,
+		  MIN(timestamp) AS first_seen,
+		  MAX(timestamp) AS last_seen
+		FROM anydesk_sessions
+	`)
+	jsonOK(w, map[string]any{
+		"sessions": sessions,
+		"events":   events,
+		"config":   config,
+		"stats":    first(stats),
+	})
+}
+
+func handleWerCrashes(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	where := " WHERE 1=1"
+	args := []any{}
+	if q != "" {
+		like := "%" + q + "%"
+		where += " AND (app_name ILIKE ? OR fault_module ILIKE ? OR exception_code ILIKE ?)"
+		args = append(args, like, like, like)
+	}
+	rows := safeQuery(`
+		SELECT app_name, app_path, app_version, app_timestamp,
+		       crash_time, fault_module, fault_module_version,
+		       exception_code, exception_offset, bucket_id, source_file
+		FROM wer_crashes`+where+`
+		ORDER BY crash_time DESC NULLS LAST
+		LIMIT 1000`, args...)
+	stats := safeQuery(`
+		SELECT
+		  COUNT(*) AS total,
+		  COUNT(DISTINCT app_name) AS unique_apps,
+		  MIN(crash_time) AS first_crash,
+		  MAX(crash_time) AS last_crash
+		FROM wer_crashes` + where, args...)
+	jsonOK(w, map[string]any{"rows": rows, "stats": first(stats)})
+}
+
+func handleSrum(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	where := " WHERE 1=1"
+	args := []any{}
+	if q != "" {
+		like := "%" + q + "%"
+		where += " AND app_name ILIKE ?"
+		args = append(args, like)
+	}
+	netRows := safeQuery(`
+		SELECT timestamp, app_name, user_name,
+		       bytes_sent, bytes_recvd, iface_luid, l2_profile_id
+		FROM srum_network_usage`+where+`
+		ORDER BY timestamp DESC NULLS LAST
+		LIMIT 2000`, args...)
+	appRows := safeQuery(`
+		SELECT timestamp, app_name, user_name,
+		       fg_cycles, bg_cycles, fg_context_switches, bg_context_switches,
+		       fg_bytes_read, fg_bytes_written
+		FROM srum_app_usage`+where+`
+		ORDER BY timestamp DESC NULLS LAST
+		LIMIT 2000`, args...)
+	topNet := safeQuery(`
+		SELECT app_name,
+		       SUM(bytes_sent) AS total_sent,
+		       SUM(bytes_recvd) AS total_recvd,
+		       COUNT(*) AS records
+		FROM srum_network_usage
+		WHERE app_name IS NOT NULL AND app_name != ''
+		GROUP BY app_name
+		ORDER BY (total_sent + total_recvd) DESC
+		LIMIT 20
+	`)
+	topApp := safeQuery(`
+		SELECT app_name,
+		       SUM(fg_cycles) AS total_fg_cycles,
+		       SUM(bg_cycles) AS total_bg_cycles,
+		       COUNT(*) AS records
+		FROM srum_app_usage
+		WHERE app_name IS NOT NULL AND app_name != ''
+		GROUP BY app_name
+		ORDER BY (total_fg_cycles + total_bg_cycles) DESC
+		LIMIT 20
+	`)
+	jsonOK(w, map[string]any{
+		"network_usage": netRows,
+		"app_usage":     appRows,
+		"top_network":   topNet,
+		"top_app":       topApp,
+	})
+}
+
+func handleBamDam(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	where := " WHERE 1=1"
+	args := []any{}
+	if q != "" {
+		like := "%" + q + "%"
+		where += " AND path ILIKE ?"
+		args = append(args, like)
+	}
+	rows := safeQuery(`
+		SELECT path, last_run, sid, source
+		FROM bam_dam`+where+`
+		ORDER BY last_run DESC NULLS LAST
+		LIMIT 2000`, args...)
+	stats := safeQuery(`
+		SELECT COUNT(*) AS total, COUNT(DISTINCT sid) AS unique_sids,
+		       MIN(last_run) AS first_run, MAX(last_run) AS last_run
+		FROM bam_dam` + where, args...)
+	jsonOK(w, map[string]any{"rows": rows, "stats": first(stats)})
+}
+
+func handleRegistryMRU(w http.ResponseWriter, r *http.Request) {
+	jsonOK(w, map[string]any{
+		"typed_urls":   safeQuery(`SELECT url, visit_order, "user" FROM typed_urls ORDER BY visit_order LIMIT 500`),
+		"run_mru":      safeQuery(`SELECT command, mru_order, "user", modified FROM run_mru ORDER BY modified DESC NULLS LAST LIMIT 500`),
+		"rdp_history":  safeQuery(`SELECT server, username, "user", modified FROM rdp_client_history ORDER BY modified DESC NULLS LAST LIMIT 500`),
+		"muicache":     safeQuery(`SELECT exe_path, description, "user" FROM muicache ORDER BY exe_path LIMIT 1000`),
+		"opensave_mru": safeQuery(`SELECT path, extension, mru_order, "user", modified FROM opensave_mru ORDER BY modified DESC NULLS LAST LIMIT 500`),
+	})
+}
+
+func handleMergeArtifact(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		jsonErr(w, 405, "POST required")
+		return
+	}
+	path := r.URL.Query().Get("path")
+	if path == "" {
+		jsonErr(w, 400, "path query parameter required")
+		return
+	}
+	// Check file exists
+	if _, err := os.Stat(path); err != nil {
+		jsonErr(w, 400, "file not found: "+path)
+		return
+	}
+	// Get current case path from context (stored in server package)
+	casePath := currentCasePath
+	if casePath == "" {
+		jsonErr(w, 500, "no active case")
+		return
+	}
+	go func() {
+		database := currentDB
+		if database == nil {
+			return
+		}
+		ch := make(chan parsers.Progress, 64)
+		go func() {
+			for range ch {
+			} // drain
+		}()
+		// Route based on extension/name
+		base := strings.ToLower(filepath.Base(path))
+		_ = base
+		_ = casePath
+		triage.ParseDir(path, database, ch) //nolint:errcheck
+		close(ch)
+		InvalidateTimelineCache()
+	}()
+	jsonOK(w, map[string]any{"status": "merge started", "path": path})
+}
+
+func handleUsbHistory(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	where := " WHERE 1=1"
+	args := []any{}
+	if q != "" {
+		like := "%" + q + "%"
+		where += " AND (friendly_name ILIKE ? OR serial_number ILIKE ? OR drive_letter ILIKE ?)"
+		args = append(args, like, like, like)
+	}
+	rows := safeQuery(`
+		SELECT first_install, last_arrival, device_id, friendly_name,
+		       serial_number, drive_letter, volume_name, manufacturer, "user", source
+		FROM usb_history`+where+`
+		ORDER BY last_arrival DESC NULLS LAST
+		LIMIT 1000`, args...)
+	stats := safeQuery(`
+		SELECT COUNT(*) AS total, COUNT(DISTINCT serial_number) AS unique_devices,
+		       MIN(first_install) AS first_seen, MAX(last_arrival) AS last_seen
+		FROM usb_history`+where, args...)
+	jsonOK(w, map[string]any{"rows": rows, "stats": first(stats)})
+}
+
+func handleNetworkAdapters(w http.ResponseWriter, r *http.Request) {
+	rows := safeQuery(`
+		SELECT adapter_name, description, ip_address, subnet_mask,
+		       default_gateway, dns_servers, dhcp_enabled, mac_address, source
+		FROM network_adapters
+		ORDER BY adapter_name
+		LIMIT 500`)
+	jsonOK(w, map[string]any{"rows": rows})
+}
+
+func handleInstalledSoftware(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	where := " WHERE 1=1"
+	args := []any{}
+	if q != "" {
+		like := "%" + q + "%"
+		where += " AND (display_name ILIKE ? OR publisher ILIKE ?)"
+		args = append(args, like, like)
+	}
+	rows := safeQuery(`
+		SELECT display_name, display_version, publisher, install_date,
+		       install_location, uninstall_string, "user", source
+		FROM installed_software`+where+`
+		ORDER BY display_name
+		LIMIT 2000`, args...)
+	stats := safeQuery(`
+		SELECT COUNT(*) AS total, COUNT(DISTINCT publisher) AS unique_publishers
+		FROM installed_software`+where, args...)
+	jsonOK(w, map[string]any{"rows": rows, "stats": first(stats)})
+}
+
+func handleBits(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	jobWhere := " WHERE 1=1"
+	jobArgs := []any{}
+	if q != "" {
+		like := "%" + q + "%"
+		jobWhere += " AND (job_name ILIKE ? OR owner ILIKE ?)"
+		jobArgs = append(jobArgs, like, like)
+	}
+	jobs := safeQuery(`
+		SELECT job_id, job_name, job_type, job_state, owner,
+		       created_time, completed_time, source_file
+		FROM bits_jobs`+jobWhere+`
+		ORDER BY created_time DESC NULLS LAST
+		LIMIT 1000`, jobArgs...)
+	fileWhere := " WHERE 1=1"
+	fileArgs := []any{}
+	if q != "" {
+		like := "%" + q + "%"
+		fileWhere += " AND (remote_url ILIKE ? OR local_path ILIKE ?)"
+		fileArgs = append(fileArgs, like, like)
+	}
+	files := safeQuery(`
+		SELECT file_id, job_id, remote_url, local_path, bytes_transferred, bytes_total, source_file
+		FROM bits_files`+fileWhere+`
+		ORDER BY bytes_total DESC NULLS LAST
+		LIMIT 2000`, fileArgs...)
+	jsonOK(w, map[string]any{"jobs": jobs, "files": files})
+}
+
+func handleNTDS(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	where := " WHERE 1=1"
+	args := []any{}
+	if q != "" {
+		like := "%" + q + "%"
+		where += " AND (sam_account_name ILIKE ? OR display_name ILIKE ? OR object_sid ILIKE ?)"
+		args = append(args, like, like, like)
+	}
+	rows := safeQuery(`
+		SELECT sam_account_name, display_name, description, object_sid,
+		       last_logon, pwd_last_set, bad_pwd_count, account_flags,
+		       is_disabled, is_deleted, pwd_never_expires, no_pwd_required
+		FROM ntds_accounts`+where+`
+		ORDER BY last_logon DESC NULLS LAST
+		LIMIT 2000`, args...)
+	stats := safeQuery(`
+		SELECT COUNT(*) AS total,
+		       COUNT(CASE WHEN is_disabled THEN 1 END) AS disabled,
+		       COUNT(CASE WHEN is_deleted THEN 1 END) AS deleted,
+		       COUNT(CASE WHEN NOT sam_account_name LIKE '%$' THEN 1 END) AS users,
+		       COUNT(CASE WHEN sam_account_name LIKE '%$' THEN 1 END) AS computers
+		FROM ntds_accounts`+where, args...)
+	jsonOK(w, map[string]any{"rows": rows, "stats": first(stats)})
+}
+
+func first(rows []map[string]any) map[string]any {
+	if len(rows) == 0 {
+		return map[string]any{}
+	}
+	return rows[0]
 }

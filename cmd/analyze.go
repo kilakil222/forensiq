@@ -28,16 +28,18 @@ var (
 	flagName    string
 	flagNoREPL  bool
 	flagReport  string
+	flagMerge   bool
 )
 
 func init() {
-	analyzeCmd.Flags().StringVar(&flagTriage, "triage", "", "path to triage ZIP")
+	analyzeCmd.Flags().StringVar(&flagTriage, "triage", "", "path to triage ZIP or folder with artifacts")
 	analyzeCmd.Flags().StringVar(&flagRAM, "ram", "", "path to memory dump")
 	analyzeCmd.Flags().StringVar(&flagDisk, "disk", "", "path to disk image (E01, VMDK, or raw)")
 	analyzeCmd.Flags().StringVar(&flagCase, "case", "", "output .fcase path")
 	analyzeCmd.Flags().StringVar(&flagName, "name", "", "case name")
 	analyzeCmd.Flags().BoolVar(&flagNoREPL, "no-repl", false, "batch mode, exit after analysis")
 	analyzeCmd.Flags().StringVar(&flagReport, "report", "", "generate HTML report to this path after analysis")
+	analyzeCmd.Flags().BoolVar(&flagMerge, "merge", false, "merge artifacts into existing case (do not wipe)")
 }
 
 func runAnalyze(cmd *cobra.Command, args []string) error {
@@ -60,6 +62,7 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		DiskPath:   flagDisk,
 		CasePath:   casePath,
 		CaseName:   flagName,
+		Merge:      flagMerge,
 	}
 
 	c, _, err := orchestrator.Run(opts)

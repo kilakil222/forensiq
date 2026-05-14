@@ -25,6 +25,10 @@ internal/parsers/memparse/_bak_*/
 *.log
 build_remote.log
 
+# Temp artifacts
+forensiq_b64.txt
+-
+
 # Dev scripts (local only)
 analyze_*.py
 diag_*.py

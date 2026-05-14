@@ -35,7 +35,8 @@ var tables = []string{
 	// --- Execution ---
 	`CREATE TABLE IF NOT EXISTS prefetch (
 		filename      TEXT, path TEXT, run_count BIGINT,
-		last_run      TIMESTAMP, volume_paths TEXT, sha256 TEXT,
+		last_run      TIMESTAMP, first_seen TIMESTAMP,
+		volume_paths TEXT, sha256 TEXT,
 		file_refs     TEXT
 	)`,
 	`CREATE TABLE IF NOT EXISTS amcache (
@@ -303,6 +304,242 @@ var tables = []string{
 	`CREATE TABLE IF NOT EXISTS linux_persistence (
 		type TEXT, path TEXT, command TEXT,
 		"user" TEXT, enabled BOOLEAN, details TEXT
+	)`,
+
+	// --- Email ---
+	`CREATE TABLE IF NOT EXISTS emails (
+		id           BIGINT,
+		source_file  TEXT,
+		folder       TEXT,
+		message_id   TEXT,
+		from_addr    TEXT,
+		from_name    TEXT,
+		to_addrs     TEXT,
+		cc_addrs     TEXT,
+		bcc_addrs    TEXT,
+		subject      TEXT,
+		sent_at      TIMESTAMP,
+		received_at  TIMESTAMP,
+		body_text    TEXT,
+		body_html    TEXT,
+		has_attachments BOOLEAN DEFAULT FALSE,
+		x_mailer     TEXT,
+		x_originating_ip TEXT,
+		reply_to     TEXT,
+		in_reply_to  TEXT,
+		headers_raw  TEXT
+	)`,
+	`CREATE TABLE IF NOT EXISTS email_attachments (
+		email_id     BIGINT,
+		filename     TEXT,
+		content_type TEXT,
+		size_bytes   BIGINT,
+		sha256       TEXT,
+		is_executable BOOLEAN DEFAULT FALSE
+	)`,
+	`CREATE TABLE IF NOT EXISTS email_urls (
+		email_id  BIGINT,
+		url       TEXT,
+		domain    TEXT
+	)`,
+
+	// --- Windows Error Reporting ---
+	`CREATE TABLE IF NOT EXISTS wer_crashes (
+		app_name             TEXT,
+		app_path             TEXT,
+		app_version          TEXT,
+		app_timestamp        TEXT,
+		crash_time           TIMESTAMP,
+		fault_module         TEXT,
+		fault_module_version TEXT,
+		exception_code       TEXT,
+		exception_offset     TEXT,
+		bucket_id            TEXT,
+		source_file          TEXT
+	)`,
+
+	// --- AnyDesk remote-access artifacts ---
+	`CREATE TABLE IF NOT EXISTS anydesk_sessions (
+		direction    TEXT,
+		timestamp    TIMESTAMP,
+		auth_method  TEXT,
+		client_alias TEXT,
+		anydesk_id   TEXT,
+		source_file  TEXT
+	)`,
+	`CREATE TABLE IF NOT EXISTS anydesk_events (
+		timestamp   TIMESTAMP,
+		pid         INTEGER,
+		level       TEXT,
+		component   TEXT,
+		message     TEXT,
+		source_file TEXT
+	)`,
+	`CREATE TABLE IF NOT EXISTS anydesk_config (
+		key         TEXT,
+		value       TEXT,
+		source_file TEXT
+	)`,
+
+	// --- Network configuration (from DHCP/system events) ---
+	`CREATE TABLE IF NOT EXISTS network_config (
+		timestamp      TIMESTAMP,
+		event_id       INTEGER,
+		adapter        TEXT,
+		ip_addr        TEXT,
+		gateway        TEXT,
+		dns_servers    TEXT,
+		subnet         TEXT,
+		dhcp_server    TEXT,
+		source         TEXT
+	)`,
+
+	// --- BITS (Background Intelligent Transfer Service) ---
+	`CREATE TABLE IF NOT EXISTS bits_jobs (
+		job_guid    TEXT,
+		job_name    TEXT,
+		job_type    INTEGER,
+		state       INTEGER,
+		state_name  TEXT,
+		priority    INTEGER,
+		owner       TEXT,
+		created_at  TIMESTAMP,
+		modified_at TIMESTAMP,
+		completed_at TIMESTAMP
+	)`,
+	`CREATE TABLE IF NOT EXISTS bits_files (
+		job_guid     TEXT,
+		file_guid    TEXT,
+		remote_url   TEXT,
+		local_path   TEXT,
+		bytes_total  BIGINT,
+		bytes_xferred BIGINT,
+		pct_complete REAL
+	)`,
+
+	// --- SRUM (System Resource Usage Monitor) ---
+	`CREATE TABLE IF NOT EXISTS srum_network_usage (
+		timestamp     TIMESTAMP,
+		app_id        INTEGER,
+		user_id       INTEGER,
+		app_name      TEXT,
+		user_name     TEXT,
+		bytes_sent    BIGINT,
+		bytes_recvd   BIGINT,
+		iface_luid    BIGINT,
+		l2_profile_id INTEGER
+	)`,
+	`CREATE TABLE IF NOT EXISTS srum_app_usage (
+		timestamp     TIMESTAMP,
+		app_id        INTEGER,
+		user_id       INTEGER,
+		app_name      TEXT,
+		user_name     TEXT,
+		fg_cycles     BIGINT,
+		bg_cycles     BIGINT,
+		fg_context_switches INTEGER,
+		bg_context_switches INTEGER,
+		fg_bytes_read BIGINT,
+		fg_bytes_written BIGINT
+	)`,
+
+	// --- Registry MRU ---
+	`CREATE TABLE IF NOT EXISTS typed_urls (
+    url         TEXT,
+    visit_order INTEGER,
+    "user"      TEXT,
+    source      TEXT
+)`,
+	`CREATE TABLE IF NOT EXISTS run_mru (
+    command   TEXT,
+    mru_order TEXT,
+    "user"    TEXT,
+    modified  TIMESTAMP
+)`,
+	`CREATE TABLE IF NOT EXISTS rdp_client_history (
+    server    TEXT,
+    username  TEXT,
+    "user"    TEXT,
+    modified  TIMESTAMP
+)`,
+	`CREATE TABLE IF NOT EXISTS muicache (
+    exe_path    TEXT,
+    description TEXT,
+    "user"      TEXT,
+    modified    TIMESTAMP
+)`,
+	`CREATE TABLE IF NOT EXISTS opensave_mru (
+    path      TEXT,
+    extension TEXT,
+    mru_order TEXT,
+    "user"    TEXT,
+    modified  TIMESTAMP
+)`,
+
+	// --- NTFS $LogFile ---
+	`CREATE TABLE IF NOT EXISTS logfile_events (
+		lsn            BIGINT,
+		operation      TEXT,
+		op_code        INTEGER,
+		transaction_id BIGINT,
+		target_attr    INTEGER,
+		filename       TEXT,
+		timestamp      TIMESTAMP
+	)`,
+
+	// --- Active Directory (NTDS.dit) ---
+	`CREATE TABLE IF NOT EXISTS ntds_accounts (
+		sam_account_name  TEXT,
+		display_name      TEXT,
+		description       TEXT,
+		object_sid        TEXT,
+		last_logon        TIMESTAMP,
+		pwd_last_set      TIMESTAMP,
+		bad_pwd_count     INTEGER,
+		account_flags     INTEGER,
+		is_disabled       BOOLEAN,
+		is_deleted        BOOLEAN,
+		pwd_never_expires BOOLEAN,
+		no_pwd_required   BOOLEAN
+	)`,
+
+	// --- USB History ---
+	`CREATE TABLE IF NOT EXISTS usb_history (
+		first_install   TIMESTAMP,
+		last_arrival    TIMESTAMP,
+		device_id       TEXT,
+		friendly_name   TEXT,
+		serial_number   TEXT,
+		drive_letter    TEXT,
+		volume_name     TEXT,
+		manufacturer    TEXT,
+		"user"          TEXT,
+		source          TEXT
+	)`,
+
+	// --- Network Adapters ---
+	`CREATE TABLE IF NOT EXISTS network_adapters (
+		adapter_name    TEXT,
+		description     TEXT,
+		ip_address      TEXT,
+		subnet_mask     TEXT,
+		default_gateway TEXT,
+		dns_servers     TEXT,
+		dhcp_enabled    TEXT,
+		mac_address     TEXT,
+		source          TEXT
+	)`,
+
+	// --- Installed Software ---
+	`CREATE TABLE IF NOT EXISTS installed_software (
+		display_name    TEXT,
+		display_version TEXT,
+		publisher       TEXT,
+		install_date    TEXT,
+		install_location TEXT,
+		uninstall_string TEXT,
+		"user"          TEXT,
+		source          TEXT
 	)`,
 
 	// --- Intelligence ---

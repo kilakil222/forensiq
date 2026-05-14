@@ -1,0 +1,111 @@
+name: Build
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    strategy:
+      matrix:
+        include:
+          - os: macos-14
+            arch: arm64
+          - os: macos-13
+            arch: amd64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Cache DuckDB static lib
+        id: cache-duckdb
+        uses: actions/cache@v4
+        with:
+          path: vendor/github.com/marcboeker/go-duckdb/deps/darwin_${{ matrix.arch }}
+          key: duckdb-darwin-${{ matrix.arch }}-v1.1.3
+
+      - name: Build DuckDB static lib
+        if: steps.cache-duckdb.outputs.cache-hit != 'true'
+        working-directory: vendor/github.com/marcboeker/go-duckdb
+        run: |
+          git clone --depth 1 --branch v1.1.3 https://github.com/duckdb/duckdb.git
+          mkdir -p deps/darwin_${{ matrix.arch }}
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            TARGET="-target arm64-apple-macos11"
+          else
+            TARGET="-target x86_64-apple-macos11"
+          fi
+          cd duckdb && \
+            CFLAGS="$TARGET -O3" CXXFLAGS="$TARGET -O3" \
+            BUILD_SHELL=0 BUILD_UNITTESTS=0 DUCKDB_PLATFORM=any \
+            ENABLE_EXTENSION_AUTOLOADING=1 ENABLE_EXTENSION_AUTOINSTALL=1 \
+            BUILD_EXTENSIONS="json" \
+            make bundle-library -j$(sysctl -n hw.logicalcpu)
+          cp build/release/libduckdb_bundle.a ../deps/darwin_${{ matrix.arch }}/libduckdb.a
+
+      - name: Build forensiq
+        env:
+          CGO_ENABLED: '1'
+          GOARCH: ${{ matrix.arch }}
+        run: go build -o forensiq-darwin-${{ matrix.arch }} .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: forensiq-darwin-${{ matrix.arch }}
+          path: forensiq-darwin-${{ matrix.arch }}
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Set up MinGW
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc
+
+      - name: Build forensiq
+        env:
+          CGO_ENABLED: '1'
+          CC: C:\msys64\mingw64\bin\gcc.exe
+          CGO_LDFLAGS: -Wl,--allow-multiple-definition
+        run: go build -o forensiq-windows-amd64.exe .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: forensiq-windows-amd64
+          path: forensiq-windows-amd64.exe
+
+  release:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            forensiq-darwin-arm64/forensiq-darwin-arm64
+            forensiq-darwin-amd64/forensiq-darwin-amd64
+            forensiq-windows-amd64/forensiq-windows-amd64.exe

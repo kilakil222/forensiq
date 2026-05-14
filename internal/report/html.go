@@ -104,6 +104,9 @@ func Generate(db *sql.DB, w io.Writer) error {
 	data.Sections = append(data.Sections, buildShellbagsSection(db))
 	data.Sections = append(data.Sections, buildUserAssistSection(db))
 	data.Sections = append(data.Sections, buildBAMSection(db))
+	data.Sections = append(data.Sections, buildAnyDeskSection(db))
+	data.Sections = append(data.Sections, buildWERSection(db))
+	data.Sections = append(data.Sections, buildSRUMSection(db))
 	data.Sections = append(data.Sections, buildKeyEventsSection(db))
 	data.Sections = append(data.Sections, buildSuspiciousFilesSection(db))
 	data.Sections = append(data.Sections, buildBrowserSection(db))
@@ -1579,6 +1582,124 @@ func buildSysmonSection(db *sql.DB) Section {
 		s.Tables = []Table{{Title: "No Sysmon events found (sysmon_process/network/dns tables empty)", Headers: []string{"Info"}, Rows: nil}}
 	}
 	return s
+}
+
+func buildAnyDeskSection(db *sql.DB) Section {
+	title := "AnyDesk Remote Access"
+	rows, err := db.Query(`
+		SELECT COALESCE(CAST(timestamp AS VARCHAR),''), COALESCE(direction,''),
+		       COALESCE(auth_method,''), COALESCE(client_alias,''), COALESCE(anydesk_id,'')
+		FROM anydesk_sessions
+		ORDER BY timestamp DESC NULLS LAST
+		LIMIT 300`)
+	if err != nil {
+		return Section{Title: title}
+	}
+	defer rows.Close()
+	var tableRows [][]string
+	for rows.Next() {
+		var ts, dir, auth, alias, id string
+		rows.Scan(&ts, &dir, &auth, &alias, &id)
+		tableRows = append(tableRows, []string{ts, dir, auth, alias, id})
+	}
+	if len(tableRows) == 0 {
+		return Section{Title: title}
+	}
+	return Section{Title: title, Tables: []Table{{
+		Title:   fmt.Sprintf("Sessions (%d)", len(tableRows)),
+		Headers: []string{"Timestamp", "Direction", "Auth Method", "Client Alias", "AnyDesk ID"},
+		Rows:    tableRows,
+	}}}
+}
+
+func buildWERSection(db *sql.DB) Section {
+	title := "Windows Error Reporting (Crash Reports)"
+	rows, err := db.Query(`
+		SELECT COALESCE(CAST(crash_time AS VARCHAR),''), COALESCE(app_name,''),
+		       COALESCE(app_version,''), COALESCE(fault_module,''),
+		       COALESCE(exception_code,''), COALESCE(exception_offset,'')
+		FROM wer_crashes
+		ORDER BY crash_time DESC NULLS LAST
+		LIMIT 300`)
+	if err != nil {
+		return Section{Title: title}
+	}
+	defer rows.Close()
+	var tableRows [][]string
+	for rows.Next() {
+		var ts, app, ver, fmod, exc, off string
+		rows.Scan(&ts, &app, &ver, &fmod, &exc, &off)
+		tableRows = append(tableRows, []string{ts, app, ver, fmod, exc, off})
+	}
+	if len(tableRows) == 0 {
+		return Section{Title: title}
+	}
+	return Section{Title: title, Tables: []Table{{
+		Title:   fmt.Sprintf("Crash Reports (%d)", len(tableRows)),
+		Headers: []string{"Crash Time", "Application", "Version", "Fault Module", "Exception", "Offset"},
+		Rows:    tableRows,
+	}}}
+}
+
+func buildSRUMSection(db *sql.DB) Section {
+	title := "SRUM — System Resource Usage Monitor"
+	var tables []Table
+
+	netRows, err := db.Query(`
+		SELECT COALESCE(CAST(timestamp AS VARCHAR),''), COALESCE(app_name,''),
+		       COALESCE(user_name,''),
+		       CAST(COALESCE(bytes_sent,0) AS VARCHAR), CAST(COALESCE(bytes_recvd,0) AS VARCHAR)
+		FROM srum_network_usage
+		WHERE (bytes_sent > 0 OR bytes_recvd > 0)
+		ORDER BY timestamp DESC NULLS LAST
+		LIMIT 300`)
+	if err == nil {
+		defer netRows.Close()
+		var tableRows [][]string
+		for netRows.Next() {
+			var ts, app, usr, sent, recv string
+			netRows.Scan(&ts, &app, &usr, &sent, &recv)
+			tableRows = append(tableRows, []string{ts, truncatePath(app, 60), usr, sent, recv})
+		}
+		if len(tableRows) > 0 {
+			tables = append(tables, Table{
+				Title:   fmt.Sprintf("Network Usage (%d records)", len(tableRows)),
+				Headers: []string{"Timestamp", "Application", "User", "Bytes Sent", "Bytes Recvd"},
+				Rows:    tableRows,
+			})
+		}
+	}
+
+	topRows, err := db.Query(`
+		SELECT COALESCE(app_name,''),
+		       CAST(COALESCE(SUM(bytes_sent),0) AS VARCHAR),
+		       CAST(COALESCE(SUM(bytes_recvd),0) AS VARCHAR)
+		FROM srum_network_usage
+		WHERE app_name IS NOT NULL AND app_name != ''
+		GROUP BY app_name
+		ORDER BY (SUM(bytes_sent)+SUM(bytes_recvd)) DESC
+		LIMIT 20`)
+	if err == nil {
+		defer topRows.Close()
+		var tableRows [][]string
+		for topRows.Next() {
+			var app, sent, recv string
+			topRows.Scan(&app, &sent, &recv)
+			tableRows = append(tableRows, []string{truncatePath(app, 60), sent, recv})
+		}
+		if len(tableRows) > 0 {
+			tables = append(tables, Table{
+				Title:   "Top Applications by Network Usage",
+				Headers: []string{"Application", "Total Bytes Sent", "Total Bytes Recvd"},
+				Rows:    tableRows,
+			})
+		}
+	}
+
+	if len(tables) == 0 {
+		return Section{Title: title}
+	}
+	return Section{Title: title, Tables: tables}
 }
 
 var tmpl = template.Must(template.New("report").Funcs(template.FuncMap{

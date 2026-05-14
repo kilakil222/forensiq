@@ -8,23 +8,32 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"forensiq/internal/parsers"
 	"forensiq/internal/parsers/amcache"
+	"forensiq/internal/parsers/anydesk"
+	"forensiq/internal/parsers/bits"
 	"forensiq/internal/parsers/browser"
+	"forensiq/internal/parsers/email"
 	"forensiq/internal/parsers/evtx"
-	linux "forensiq/internal/parsers/linux"
 	"forensiq/internal/parsers/jumplists"
+	linux "forensiq/internal/parsers/linux"
 	"forensiq/internal/parsers/lnk"
-	"forensiq/internal/parsers/recyclebin"
-	"forensiq/internal/parsers/shellbags"
-	"forensiq/internal/parsers/usnjrnl"
+	"forensiq/internal/parsers/logfile"
 	"forensiq/internal/parsers/mft"
+	"forensiq/internal/parsers/ntds"
 	"forensiq/internal/parsers/prefetch"
+	"forensiq/internal/parsers/recyclebin"
 	"forensiq/internal/parsers/registry"
+	"forensiq/internal/parsers/shellbags"
 	"forensiq/internal/parsers/shimcache"
+	"forensiq/internal/parsers/srum"
+	"forensiq/internal/parsers/usnjrnl"
+	"forensiq/internal/parsers/wer"
 )
 
 // RouteAll maps a file path inside the ZIP to the list of parsers that handle it.
@@ -91,6 +100,47 @@ func RouteAll(path string) []parsers.Parser {
 	case base == "history" && (strings.Contains(lower, "user data") || strings.Contains(lower, "appdata")):
 		return []parsers.Parser{browser.New(path)}
 
+	// Email formats
+	case strings.HasSuffix(lower, ".eml"):
+		return []parsers.Parser{email.NewEML(path, folderFromPath(path))}
+
+	case strings.HasSuffix(lower, ".msg"):
+		return []parsers.Parser{email.NewMSG(path)}
+
+	case strings.HasSuffix(lower, ".mbox") || base == "inbox" || base == "sent" || base == "drafts" ||
+		base == "trash" || base == "spam" || strings.HasSuffix(lower, ".mbx"):
+		return []parsers.Parser{email.NewMBOX(path, folderFromPath(path))}
+
+	// WER crash reports
+	case strings.HasSuffix(lower, ".wer"):
+		return []parsers.Parser{wer.New(path)}
+
+	// AnyDesk connection history (UTF-16LE)
+	case base == "connection_trace.txt" && strings.Contains(lower, "anydesk"):
+		return []parsers.Parser{anydesk.NewConnectionTrace(path)}
+	case base == "connection_trace.txt":
+		return []parsers.Parser{anydesk.NewConnectionTrace(path)}
+
+	// AnyDesk service/client trace logs
+	case base == "ad_svc.trace" || base == "ad.trace" || base == "ad_user.trace":
+		return []parsers.Parser{anydesk.NewTrace(path)}
+
+	// AnyDesk configuration files (must be in anydesk context to avoid false positives)
+	case (base == "system.conf" || base == "user.conf") && strings.Contains(lower, "anydesk"):
+		return []parsers.Parser{anydesk.NewConf(path)}
+
+	case base == "srudb.dat":
+		return []parsers.Parser{srum.New()}
+
+	case base == "$logfile" || base == "logfile":
+		return []parsers.Parser{logfile.New()}
+
+	case base == "ntds.dit":
+		return []parsers.Parser{ntds.New()}
+
+	case base == "qmgr.db":
+		return []parsers.Parser{bits.New()}
+
 	case base == "$j" || base == "usnjrnl_j" || base == "$usnjrnl_j" || base == "j":
 		return []parsers.Parser{usnjrnl.New()}
 
@@ -136,6 +186,19 @@ func Route(path string) parsers.Parser {
 	return ps[0]
 }
 
+// folderFromPath extracts a meaningful folder name from an email artifact path.
+// e.g. "mail/Inbox/msg001.eml" → "Inbox"
+func folderFromPath(path string) string {
+	parts := strings.Split(filepath.ToSlash(path), "/")
+	for i := len(parts) - 2; i >= 0; i-- {
+		p := parts[i]
+		if p != "" && p != "." && p != "mail" && p != "email" && p != "emails" {
+			return p
+		}
+	}
+	return ""
+}
+
 // userFromPath tries to extract a username from a path like "home/alice/.bash_history".
 func userFromPath(path string) string {
 	parts := strings.Split(filepath.ToSlash(path), "/")
@@ -159,6 +222,55 @@ func channelFromPath(path string) string {
 		return name[idx+2:]
 	}
 	return name
+}
+
+// ParseDir walks dirPath recursively, dispatches each recognized file to its
+// parser(s), and inserts results into db. Unknown files are silently skipped.
+// A parse failure for one file does not abort the walk.
+func ParseDir(dirPath string, db *sql.DB, ch chan<- parsers.Progress) error {
+	return filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		// Compute a relative path from the root so RouteAll patterns match
+		// the same way they do inside a ZIP (e.g. "System32/config/SYSTEM").
+		rel, relErr := filepath.Rel(dirPath, path)
+		if relErr != nil {
+			rel = path
+		}
+		rel = filepath.ToSlash(rel)
+
+		ps := RouteAll(rel)
+		if len(ps) == 0 {
+			return nil
+		}
+
+		if len(ps) == 1 {
+			f, openErr := os.Open(path)
+			if openErr != nil {
+				ch <- parsers.Progress{Parser: ps[0].Name(), Err: openErr, Done: true}
+				return nil
+			}
+			if parseErr := ps[0].Parse(f, db, ch); parseErr != nil {
+				ch <- parsers.Progress{Parser: ps[0].Name(), Err: parseErr, Done: true}
+			}
+			f.Close()
+		} else {
+			data, readErr := os.ReadFile(path)
+			if readErr != nil {
+				for _, p := range ps {
+					ch <- parsers.Progress{Parser: p.Name(), Err: readErr, Done: true}
+				}
+				return nil
+			}
+			for _, p := range ps {
+				if parseErr := p.Parse(bytes.NewReader(data), db, ch); parseErr != nil {
+					ch <- parsers.Progress{Parser: p.Name(), Err: parseErr, Done: true}
+				}
+			}
+		}
+		return nil
+	})
 }
 
 // walInjector is implemented by parsers that can consume a WAL file alongside the main DB.

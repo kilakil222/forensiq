@@ -45,6 +45,10 @@ var targetPatterns = []string{
 	"$I*",
 	"History",       // Chrome/Edge/Brave browser history (SQLite)
 	"places.sqlite", // Firefox browser history (SQLite)
+	"SRUDB.DAT",      // System Resource Usage Monitor
+	"qmgr.db",        // BITS download jobs
+	"NTDS.dit",       // Active Directory database
+	"$LogFile",       // NTFS transaction log
 }
 
 // Analyze opens imagePath, locates NTFS partitions, extracts forensic

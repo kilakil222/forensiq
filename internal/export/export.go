@@ -36,6 +36,11 @@ var AllTables = []string{
 	"persistence", "services", "scheduled_tasks", "wmi_subs",
 	"mem_pslist", "mem_cmdline", "mem_netscan", "mem_malfind",
 	"ps_scriptblock", "browser_history",
+	"anydesk_sessions", "anydesk_events", "anydesk_config",
+	"wer_crashes", "srum_network_usage", "srum_app_usage",
+	"logfile_events", "ntds_accounts",
+	"bam_dam",
+	"typed_urls", "run_mru", "rdp_client_history", "muicache", "opensave_mru",
 	"ioc_indicators", "attack_techniques", "source_files",
 	"timeline",
 }
@@ -89,6 +94,26 @@ const timelineBase = `(
 	UNION ALL
 	SELECT timestamp, 'ShellHistory', shell, "user" || ': ' || LEFT(command, 200)
 		FROM shell_history WHERE timestamp IS NOT NULL AND timestamp >= TIMESTAMP '2000-01-01'
+	UNION ALL
+	SELECT timestamp, 'AnyDesk', direction,
+		COALESCE(client_alias, '') || CASE WHEN anydesk_id IS NOT NULL AND anydesk_id != '' THEN ' [' || anydesk_id || ']' ELSE '' END
+		FROM anydesk_sessions WHERE timestamp IS NOT NULL AND timestamp >= TIMESTAMP '2000-01-01'
+	UNION ALL
+	SELECT crash_time, 'WER', app_name,
+		COALESCE(fault_module, '') || ' ' || COALESCE(exception_code, '')
+		FROM wer_crashes WHERE crash_time IS NOT NULL AND crash_time >= TIMESTAMP '2000-01-01'
+	UNION ALL
+	SELECT timestamp, 'SRUM/Net', app_name,
+		'sent=' || CAST(bytes_sent AS VARCHAR) || ' recv=' || CAST(bytes_recvd AS VARCHAR)
+		FROM srum_network_usage WHERE timestamp IS NOT NULL AND timestamp >= TIMESTAMP '2000-01-01'
+		AND (bytes_sent > 0 OR bytes_recvd > 0)
+	UNION ALL
+	SELECT modified, 'RDP-Client', server,
+	    CASE WHEN username != '' THEN 'user=' || username ELSE '' END
+	FROM rdp_client_history WHERE modified IS NOT NULL AND modified >= TIMESTAMP '2000-01-01'
+	UNION ALL
+	SELECT modified, 'RunMRU', mru_order, "user" || ': ' || command
+	FROM run_mru WHERE modified IS NOT NULL AND modified >= TIMESTAMP '2000-01-01'
 ) _tl`
 
 // BuildTimelineQuery returns a complete SELECT with optional time/source filters.

@@ -23,6 +23,7 @@ type Options struct {
 	DiskPath   string
 	CasePath   string
 	CaseName   string
+	Merge      bool // if true, append to existing case instead of wiping
 }
 
 type RunResult struct {
@@ -32,7 +33,9 @@ type RunResult struct {
 }
 
 func Run(opts Options) (*fcase.Case, *RunResult, error) {
-	os.Remove(opts.CasePath) // clean slate — re-runs must not accumulate rows
+	if !opts.Merge {
+		os.Remove(opts.CasePath) // clean slate — re-runs must not accumulate rows
+	}
 	c, err := fcase.Open(opts.CasePath, opts.CaseName)
 	if err != nil {
 		return nil, nil, fmt.Errorf("open case: %w", err)
@@ -60,8 +63,19 @@ func Run(opts Options) (*fcase.Case, *RunResult, error) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := triage.ParseZIP(opts.TriagePath, c.DB(), ch); err != nil {
-				ch <- parsers.Progress{Parser: "triage", Err: err, Done: true}
+			info, statErr := os.Stat(opts.TriagePath)
+			if statErr != nil {
+				ch <- parsers.Progress{Parser: "triage", Err: statErr, Done: true}
+				return
+			}
+			var parseErr error
+			if info.IsDir() {
+				parseErr = triage.ParseDir(opts.TriagePath, c.DB(), ch)
+			} else {
+				parseErr = triage.ParseZIP(opts.TriagePath, c.DB(), ch)
+			}
+			if parseErr != nil {
+				ch <- parsers.Progress{Parser: "triage", Err: parseErr, Done: true}
 			}
 		}()
 	}

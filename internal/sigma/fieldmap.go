@@ -97,25 +97,25 @@ var logsourceMap = map[string]logsourceDef{
 	// EVTX-based logsources — all map to evtx_events
 	"security": {
 		from:    `evtx_events`,
-		valExpr: `CAST(event_id AS VARCHAR) || ': ' || LEFT(COALESCE(message,''), 120)`,
+		valExpr: `CAST(event_id AS VARCHAR) || ': ' || COALESCE(message,'')`,
 		tsExpr:  `timestamp`,
 		fields:  evtxFields,
 	},
 	"system": {
 		from:    `evtx_events`,
-		valExpr: `CAST(event_id AS VARCHAR) || ': ' || LEFT(COALESCE(message,''), 120)`,
+		valExpr: `CAST(event_id AS VARCHAR) || ': ' || COALESCE(message,'')`,
 		tsExpr:  `timestamp`,
 		fields:  evtxFields,
 	},
 	"application": {
 		from:    `evtx_events`,
-		valExpr: `CAST(event_id AS VARCHAR) || ': ' || LEFT(COALESCE(message,''), 120)`,
+		valExpr: `CAST(event_id AS VARCHAR) || ': ' || COALESCE(message,'')`,
 		tsExpr:  `timestamp`,
 		fields:  evtxFields,
 	},
 	"powershell-classic": {
 		from:    `ps_scriptblock`,
-		valExpr: `LEFT(COALESCE(script_text,''), 200)`,
+		valExpr: `COALESCE(script_text,'')`,
 		tsExpr:  `timestamp`,
 		fields: map[string]string{
 			"ScriptBlockText": "script_text",
@@ -125,7 +125,7 @@ var logsourceMap = map[string]logsourceDef{
 	},
 	"ps_script": {
 		from:    `ps_scriptblock`,
-		valExpr: `LEFT(COALESCE(script_text,''), 200)`,
+		valExpr: `COALESCE(script_text,'')`,
 		tsExpr:  `timestamp`,
 		fields: map[string]string{
 			"ScriptBlockText": "script_text",
@@ -146,7 +146,7 @@ var logsourceMap = map[string]logsourceDef{
 	// Catch-all for any EVTX by service name
 	"sysmon": {
 		from:    `evtx_events`,
-		valExpr: `CAST(event_id AS VARCHAR) || ': ' || LEFT(COALESCE(message,''), 120)`,
+		valExpr: `CAST(event_id AS VARCHAR) || ': ' || COALESCE(message,'')`,
 		tsExpr:  `timestamp`,
 		fields:  evtxFields,
 	},
@@ -193,6 +193,166 @@ var logsourceMap = map[string]logsourceDef{
 			"User":         "user_name",
 		},
 	},
+	// Structured sysmon network table (faster and more precise than evtx message search)
+	"sysmon:network_connection": {
+		from:    `sysmon_network`,
+		valExpr: `COALESCE(image,'?') || ' → ' || COALESCE(dst_ip,'?') || ':' || CAST(COALESCE(dst_port,0) AS VARCHAR)`,
+		tsExpr:  `timestamp`,
+		fields: map[string]string{
+			"DestinationIp":       "dst_ip",
+			"DestinationPort":     "CAST(dst_port AS VARCHAR)",
+			"DestinationHostname": "dst_host",
+			"SourceIp":            "src_ip",
+			"SourcePort":          "CAST(src_port AS VARCHAR)",
+			"Image":               "image",
+			"ProcessId":           "CAST(pid AS VARCHAR)",
+			"Protocol":            "proto",
+			"Initiated":           "CAST(initiated AS VARCHAR)",
+			"User":                "user_name",
+			"Computer":            "computer",
+		},
+	},
+	// Registry events — mapped to our structured registry_raw table
+	"registry_event": {
+		from:    `registry_raw`,
+		valExpr: `COALESCE(hive,'') || chr(92) || COALESCE(key_path,'') || chr(92) || COALESCE(value_name,'')`,
+		tsExpr:  `modified`,
+		fields: map[string]string{
+			"TargetObject": `hive || chr(92) || key_path || chr(92) || value_name`,
+			"Details":      "value_data",
+			"EventType":    "''",
+			"Image":        "''",
+			"ProcessId":    "''",
+			"User":         "''",
+		},
+	},
+	"registry_add": {
+		from:    `registry_raw`,
+		valExpr: `COALESCE(hive,'') || chr(92) || COALESCE(key_path,'') || chr(92) || COALESCE(value_name,'')`,
+		tsExpr:  `modified`,
+		fields: map[string]string{
+			"TargetObject": `hive || chr(92) || key_path || chr(92) || value_name`,
+			"Details":      "value_data",
+			"EventType":    "''",
+		},
+	},
+	"registry_set": {
+		from:    `registry_raw`,
+		valExpr: `COALESCE(hive,'') || chr(92) || COALESCE(key_path,'') || chr(92) || COALESCE(value_name,'')`,
+		tsExpr:  `modified`,
+		fields: map[string]string{
+			"TargetObject": `hive || chr(92) || key_path || chr(92) || value_name`,
+			"Details":      "value_data",
+			"EventType":    "''",
+		},
+	},
+	// DNS query events — structured sysmon_dns table
+	"sysmon:dns_query": {
+		from:    `sysmon_dns`,
+		valExpr: `COALESCE(image,'?') || ' queried ' || COALESCE(query_name,'?')`,
+		tsExpr:  `timestamp`,
+		fields: map[string]string{
+			"QueryName":    "query_name",
+			"QueryStatus":  "query_status",
+			"QueryResults": "query_results",
+			"Image":        "image",
+			"ProcessId":    "CAST(pid AS VARCHAR)",
+			"User":         "user_name",
+		},
+	},
+	// Driver/image load events
+	"driver_load": {
+		from:    `sysmon_imageload`,
+		valExpr: `COALESCE(image_loaded,'?')`,
+		tsExpr:  `timestamp`,
+		fields: map[string]string{
+			"ImageLoaded": "image_loaded",
+			"Signed":      "CAST(signed AS VARCHAR)",
+			"Signature":   "signature",
+			"SHA256":      "sha256",
+			"Image":       "image",
+		},
+	},
+	// Pipe creation (from EVTX event 17/18 or proc_creation)
+	"pipe_created": {
+		from:    `evtx_events`,
+		valExpr: `COALESCE(message,'')`,
+		tsExpr:  `timestamp`,
+		fields:  evtxFields,
+	},
+	// Process tampering (Sysmon event 25)
+	"process_tampering": {
+		from:    `sysmon_process`,
+		valExpr: `COALESCE(image,'?') || ' [' || CAST(COALESCE(pid,0) AS VARCHAR) || ']'`,
+		tsExpr:  `timestamp`,
+		fields: map[string]string{
+			"Image":  "image",
+			"User":   "user_name",
+			"Hashes": "sha256",
+		},
+	},
+	// Shell history (Linux/macOS coverage)
+	"shell_history": {
+		from:    `shell_history`,
+		valExpr: `COALESCE("user",'?') || ': ' || LEFT(COALESCE(command,''),200)`,
+		tsExpr:  `timestamp`,
+		fields: map[string]string{
+			"CommandLine": "command",
+			"User":        `"user"`,
+			"Shell":       "shell",
+		},
+	},
+	// WMI events
+	"wmi_event": {
+		from:    `wmi_subs`,
+		valExpr: `COALESCE(consumer_name,'?') || ' | ' || COALESCE(filter_query,'?')`,
+		tsExpr:  `created`,
+		fields: map[string]string{
+			"Name":         "consumer_name",
+			"ConsumerType": "consumer_type",
+			"Filter":       "filter_query",
+			"Query":        "filter_query",
+		},
+	},
+	// Scheduled tasks
+	"task_scheduler": {
+		from:    `scheduled_tasks`,
+		valExpr: `COALESCE(name,'?') || ': ' || COALESCE(command,'?')`,
+		tsExpr:  `last_run`,
+		fields: map[string]string{
+			"TaskName":    "name",
+			"TaskPath":    "path",
+			"CommandLine": "command || COALESCE(' ' || args, '')",
+			"Author":      "author",
+		},
+	},
+	// Sysmon process creation (structured table, more precise than proc_creation union)
+	"sysmon:process_creation": {
+		from: `(
+        SELECT image AS _img, COALESCE(cmdline,'') AS _cmd,
+               COALESCE(parent_image,'') AS _parent_img,
+               COALESCE(parent_cmdline,'') AS _parent_cmd,
+               COALESCE(user_name,'') AS _user,
+               COALESCE(integrity_level,'') AS _integrity,
+               timestamp AS _ts,
+               COALESCE(sha256,'') AS _sha256,
+               COALESCE(image,'?')||' [sysmon]' AS _val
+        FROM sysmon_process
+    ) _sp`,
+		valExpr: `_val`,
+		tsExpr:  `_ts`,
+		fields: map[string]string{
+			"Image":             "_img",
+			"OriginalFileName":  "_img",
+			"CommandLine":       "_cmd",
+			"ParentImage":       "_parent_img",
+			"ParentCommandLine": "_parent_cmd",
+			"User":              "_user",
+			"IntegrityLevel":    "_integrity",
+			"Hashes":            "_sha256",
+			"SHA256":            "_sha256",
+		},
+	},
 }
 
 // evtxFields is shared across EVTX-based logsources.
@@ -220,6 +380,10 @@ func resolveLogsource(rule *Rule) (logsourceDef, bool) {
 		strings.ToLower(ls.Category),
 		strings.ToLower(ls.Service),
 		strings.ToLower(ls.Product + ":" + ls.Category),
+	}
+	// Try "product:category" combination with sysmon prefix
+	if strings.ToLower(ls.Product) == "windows" && ls.Category != "" {
+		candidates = append(candidates, "sysmon:"+strings.ToLower(ls.Category))
 	}
 	for _, key := range candidates {
 		if key == "" || key == ":" {

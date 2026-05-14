@@ -27,6 +27,8 @@ var webFS embed.FS
 
 var db *sql.DB
 var currentRAMPath string
+var currentCasePath string
+var currentDB *sql.DB
 
 func Start(casePath, ramPath string, port int) error {
 	var err error
@@ -34,6 +36,8 @@ func Start(casePath, ramPath string, port int) error {
 	if err != nil {
 		return fmt.Errorf("open case: %w", err)
 	}
+	currentDB = db
+	currentCasePath = casePath
 	defer db.Close()
 
 	// Ensure case_notes table exists for analyst annotations
@@ -61,6 +65,9 @@ func Start(casePath, ramPath string, port int) error {
 		}
 	}
 
+	// Pre-warm the timeline cache in background so the first UI load is fast.
+	WarmTimelineCache()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", serveSPA)
 	mux.HandleFunc("/api/run-detect", handleRunDetect)
@@ -84,6 +91,7 @@ func Start(casePath, ramPath string, port int) error {
 	mux.HandleFunc("/api/user-detail", handleUserDetail)
 	mux.HandleFunc("/api/pivot", handlePivot)
 	mux.HandleFunc("/api/event-context", handleEventContext)
+	mux.HandleFunc("/api/event-lookup", handleEventLookup)
 	mux.HandleFunc("/api/activity", handleActivity)
 	mux.HandleFunc("/api/attack-summary", handleAttackSummary)
 	mux.HandleFunc("/api/prefetch", handlePrefetch)
@@ -121,6 +129,19 @@ func Start(casePath, ramPath string, port int) error {
 	mux.HandleFunc("/api/usnjrnl", handleUsnjrnl)
 	mux.HandleFunc("/api/rerun-ram", handleRerunRAM)
 	mux.HandleFunc("/api/mem-summary", handleMemSummary)
+	mux.HandleFunc("/api/emails", handleEmails)
+	mux.HandleFunc("/api/email-detail", handleEmailDetail)
+	mux.HandleFunc("/api/anydesk", handleAnyDesk)
+	mux.HandleFunc("/api/wer-crashes", handleWerCrashes)
+	mux.HandleFunc("/api/srum", handleSrum)
+	mux.HandleFunc("/api/bam-dam", handleBamDam)
+	mux.HandleFunc("/api/registry-mru", handleRegistryMRU)
+	mux.HandleFunc("/api/ntds", handleNTDS)
+	mux.HandleFunc("/api/bits", handleBits)
+	mux.HandleFunc("/api/usb-history", handleUsbHistory)
+	mux.HandleFunc("/api/network-adapters", handleNetworkAdapters)
+	mux.HandleFunc("/api/installed-software", handleInstalledSoftware)
+	mux.HandleFunc("/api/merge-artifact", handleMergeArtifact)
 
 	addr := fmt.Sprintf(":%d", port)
 	url := fmt.Sprintf("http://localhost:%d", port)
